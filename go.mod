@@ -1,4 +1,4 @@
-module github.com/j-weigle/tmi-go
+module github.com/j-weigle/tmi
 
 go 1.16
 

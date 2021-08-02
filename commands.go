@@ -101,16 +101,28 @@ func (c *client) handleMessage(rawMessage string) {
 	msgdata := parseMessage(rawMessage)
 
 	if msgdata.Prefix == "tmi.twitch.tv" {
-		if f, ok := tmiTwitchTvCommands[msgdata.Command]; ok && f != nil {
-			f(c, msgdata)
+		if f, ok := tmiTwitchTvCommands[msgdata.Command]; ok {
+			if f != nil {
+				f(c, msgdata)
+			}
+		} else {
+			c.err <- fmt.Errorf("could not handle message with tmi.twitch.tv prefix:\n" + rawMessage)
 		}
 	} else if msgdata.Prefix == "jtv" {
-		if f, ok := jtvCommands[msgdata.Command]; ok && f != nil {
-			f(c, msgdata)
+		if f, ok := jtvCommands[msgdata.Command]; ok {
+			if f != nil {
+				f(c, msgdata)
+			}
+		} else {
+			c.err <- fmt.Errorf("could not handle message with jtv prefix:\n" + rawMessage)
 		}
 	} else {
-		if f, ok := otherCommands[msgdata.Command]; ok && f != nil {
-			f(c, msgdata)
+		if f, ok := otherCommands[msgdata.Command]; ok {
+			if f != nil {
+				f(c, msgdata)
+			}
+		} else {
+			c.err <- fmt.Errorf("could not handle message with no prefix:\n" + rawMessage)
 		}
 	}
 }

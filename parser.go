@@ -122,8 +122,7 @@ func parseTags(rawTags string) map[string]string {
 
 	splRawTags := strings.Split(rawTags, ";")
 
-	for i := range splRawTags {
-		tag := splRawTags[i]
+	for _, tag := range splRawTags {
 		pair := strings.Split(tag, "=")
 		if strings.Contains(tag, "=") {
 			tags[pair[0]] = pair[1]

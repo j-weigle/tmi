@@ -89,7 +89,7 @@ func (c *connectionConfig) SetToDefault() {
 	c.maxReconnectInterval = 30000
 }
 
-// Set sets the login identity configuration to username and password.
+// Set sets the login identity configuration to username and password with oauth: prepended.
 func (c *identityConfig) Set(username, password string) {
 	if !strings.HasPrefix(password, "oauth:") {
 		password = "oauth:" + password
@@ -98,8 +98,21 @@ func (c *identityConfig) Set(username, password string) {
 	c.password = password
 }
 
+// SetPassword sets the password for the identity configuration to password with oauth: prepended.
+func (c *identityConfig) SetPassword(password string) {
+	if !strings.HasPrefix(password, "oauth:") {
+		password = "oauth:" + password
+	}
+	c.password = password
+}
+
 // SetToAnonymous sets username to an random justinfan username (password can be anything).
 func (id *identityConfig) SetToAnonymous() {
 	id.username = "justinfan" + fmt.Sprint(rand.Intn(79000)+1000)
 	id.password = "swordfish"
+}
+
+// SetUsername sets the username for the identity configuration to username.
+func (c *identityConfig) SetUsername(username string) {
+	c.username = username
 }

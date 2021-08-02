@@ -94,7 +94,7 @@ func (c *identityConfig) Set(username, password string) {
 	if !strings.HasPrefix(password, "oauth:") {
 		password = "oauth:" + password
 	}
-	c.username = username
+	c.username = strings.ToLower(username)
 	c.password = password
 }
 
@@ -114,5 +114,5 @@ func (id *identityConfig) SetToAnonymous() {
 
 // SetUsername sets the username for the identity configuration to username.
 func (c *identityConfig) SetUsername(username string) {
-	c.username = username
+	c.username = strings.ToLower(username)
 }

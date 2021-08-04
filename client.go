@@ -10,12 +10,13 @@ import (
 )
 
 type client struct {
-	conn     *websocket.Conn
-	config   *clientConfig
-	done     chan bool
-	err      chan error
-	messages chan *Message
-	mutex    *sync.Mutex
+	conn    *websocket.Conn
+	config  *clientConfig
+	done    chan bool
+	err     chan error
+	message chan *Message
+	rMutex  *sync.Mutex
+	wMutex  *sync.Mutex
 }
 
 type clientConfig struct {
@@ -39,8 +40,15 @@ type identityConfig struct {
 
 // NewClient returns a new client using config
 func NewClient(config *clientConfig) *client {
-	mutex := &sync.Mutex{}
-	return &client{config: config, mutex: mutex}
+	var readMutex = &sync.Mutex{}
+	var writeMutex = &sync.Mutex{}
+	return &client{
+		config: config,
+		done:   make(chan bool),
+		err:    make(chan error),
+		rMutex: readMutex,
+		wMutex: writeMutex,
+	}
 }
 
 // NewClientConfig returns a client config with Connection settings initialzed

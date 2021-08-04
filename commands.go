@@ -2,8 +2,10 @@ package tmi
 
 import (
 	"fmt"
+	"math"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -30,13 +32,19 @@ func (c *client) Connect() error {
 		u = url.URL{Scheme: "ws", Host: wsServ}
 	}
 
+	// Make sure the connection is not already open before connecting
+	if c.conn != nil {
+		err = c.Disconnect()
+		if err != nil {
+			c.CloseConnection()
+		}
+	}
+
 	c.conn, _, err = websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		return err
 	}
-	c.done = make(chan bool)
-	c.err = make(chan error)
-	c.messages = make(chan *Message, 50)
+	c.message = make(chan *Message, 50)
 
 	go c.readMessages()
 
@@ -57,10 +65,10 @@ func (c *client) Connect() error {
 
 // Disconnect sends a close message to the server and lets the server close the connection
 func (c *client) Disconnect() error {
-	c.mutex.Lock()
+	c.wMutex.Lock()
 	err := c.conn.WriteMessage(websocket.CloseMessage,
 		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	c.mutex.Unlock()
+	c.wMutex.Unlock()
 	return err
 }
 
@@ -98,28 +106,29 @@ func (c *client) Say(channel string, message string) error {
 }
 
 func (c *client) handleMessage(rawMessage string) {
-	msgdata := parseMessage(rawMessage)
+	ircData := parseIRCMessage(rawMessage)
 
-	if msgdata.Prefix == "tmi.twitch.tv" {
-		if f, ok := tmiTwitchTvCommands[msgdata.Command]; ok {
+	switch ircData.Prefix {
+	case "tmi.twitch.tv":
+		if f, ok := tmiTwitchTvCommands(ircData.Command); ok {
 			if f != nil {
-				f(c, msgdata)
+				f(c, ircData)
 			}
 		} else {
 			c.err <- fmt.Errorf("could not handle message with tmi.twitch.tv prefix:\n" + rawMessage)
 		}
-	} else if msgdata.Prefix == "jtv" {
-		if f, ok := jtvCommands[msgdata.Command]; ok {
+	case "jtv":
+		if f, ok := jtvCommands(ircData.Command); ok {
 			if f != nil {
-				f(c, msgdata)
+				f(c, ircData)
 			}
 		} else {
 			c.err <- fmt.Errorf("could not handle message with jtv prefix:\n" + rawMessage)
 		}
-	} else {
-		if f, ok := otherCommands[msgdata.Command]; ok {
+	default:
+		if f, ok := otherCommands(ircData.Command); ok {
 			if f != nil {
-				f(c, msgdata)
+				f(c, ircData)
 			}
 		} else {
 			c.err <- fmt.Errorf("could not handle message with no prefix:\n" + rawMessage)
@@ -128,14 +137,14 @@ func (c *client) handleMessage(rawMessage string) {
 }
 
 func (c *client) readMessages() {
-	defer close(c.done)
-	defer close(c.err)
-	defer close(c.messages)
+	defer close(c.message)
 
 	for {
+		c.rMutex.Lock()
 		_, received, err := c.conn.ReadMessage()
+		c.rMutex.Unlock()
 		if err != nil {
-			c.err <- err
+			c.message <- &Message{Type: "closing messages"}
 			return
 		}
 
@@ -148,10 +157,36 @@ func (c *client) readMessages() {
 	}
 }
 
+// TODO: change back to private, and use it
+func (c *client) Reconnect() error {
+	var maxAttempts = c.config.Connection.maxReconnectAttempts
+	if maxAttempts == 0 {
+		return fmt.Errorf("tmi.client.reconnect(): max attempts was 0")
+	}
+	var maxInterval = time.Duration(c.config.Connection.maxReconnectInterval)
+	if maxInterval < 0 {
+		return fmt.Errorf("tmi.client.reconnect(): max interval was negative")
+	}
+
+	var err = c.Connect()
+	for i := 1; err != nil; i++ {
+		if maxAttempts >= 0 && i >= maxAttempts {
+			return fmt.Errorf("tmi.client.reconnect(): max attempts to reconnect reached")
+		}
+		sleepDuration := time.Duration(math.Pow(2, float64(i)))
+		if sleepDuration > maxInterval {
+			sleepDuration = maxInterval
+		}
+		time.Sleep(sleepDuration)
+		err = c.Connect()
+	}
+	return nil
+}
+
 func (c *client) send(message string) error {
-	c.mutex.Lock()
+	c.wMutex.Lock()
 	err := c.conn.WriteMessage(websocket.TextMessage, []byte(message))
-	c.mutex.Unlock()
+	c.wMutex.Unlock()
 	return err
 }
 

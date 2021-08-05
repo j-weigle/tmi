@@ -140,6 +140,7 @@ func (c *client) tmiTwitchTvCommandNOTICE(ircData *IRCData) {
 			if err != nil {
 				c.CloseConnection()
 			}
+			close(c.done)
 			return
 		}
 	}

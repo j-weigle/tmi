@@ -60,7 +60,7 @@ func TestDoubleConnect(t *testing.T) {
 			t.Error(err)
 		case message := <-client.message:
 			if message != nil {
-				fmt.Println("type: " + message.Type)
+				fmt.Println("type: ", message.GetType())
 			}
 		case <-client.done:
 			fmt.Println("done")

@@ -10,13 +10,14 @@ import (
 )
 
 type client struct {
-	conn    *websocket.Conn
-	config  *clientConfig
-	done    chan bool
-	err     chan error
-	message chan *Message
-	rMutex  *sync.Mutex
-	wMutex  *sync.Mutex
+	conn     *websocket.Conn
+	config   *clientConfig
+	done     chan bool
+	err      chan error
+	handlers map[MessageType]func(Message)
+	message  chan Message
+	rMutex   *sync.Mutex
+	wMutex   *sync.Mutex
 }
 
 type clientConfig struct {

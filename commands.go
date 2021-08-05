@@ -44,7 +44,7 @@ func (c *client) Connect() error {
 	if err != nil {
 		return err
 	}
-	c.message = make(chan *Message, 50)
+	c.message = make(chan Message, 50)
 
 	go c.readMessages()
 
@@ -81,6 +81,10 @@ func (c *client) Join(channel string) error {
 	return c.send("JOIN " + channel)
 }
 
+func (c *client) On(mt MessageType, f func(Message)) {
+	c.handlers[mt] = f
+}
+
 // Part leaves channel
 func (c *client) Part(channel string) error {
 	if !strings.HasPrefix(channel, "#") {
@@ -110,28 +114,28 @@ func (c *client) handleMessage(rawMessage string) {
 
 	switch ircData.Prefix {
 	case "tmi.twitch.tv":
-		if f, ok := tmiTwitchTvCommands(ircData.Command); ok {
-			if f != nil {
-				f(c, ircData)
+		if h, ok := tmiTwitchTvHandlers(ircData.Command); ok {
+			if h != nil {
+				h(c, ircData)
 			}
 		} else {
 			c.err <- fmt.Errorf("could not handle message with tmi.twitch.tv prefix:\n" + rawMessage)
 		}
 	case "jtv":
-		if f, ok := jtvCommands(ircData.Command); ok {
-			if f != nil {
-				f(c, ircData)
+		if h, ok := jtvHandlers(ircData.Command); ok {
+			if h != nil {
+				h(c, ircData)
 			}
 		} else {
 			c.err <- fmt.Errorf("could not handle message with jtv prefix:\n" + rawMessage)
 		}
 	default:
-		if f, ok := otherCommands(ircData.Command); ok {
-			if f != nil {
-				f(c, ircData)
+		if h, ok := otherHandlers(ircData.Command); ok {
+			if h != nil {
+				h(c, ircData)
 			}
 		} else {
-			c.err <- fmt.Errorf("could not handle message with no prefix:\n" + rawMessage)
+			c.err <- fmt.Errorf("could not handle message with { %s } as prefix:\n"+rawMessage, ircData.Prefix)
 		}
 	}
 }
@@ -144,7 +148,6 @@ func (c *client) readMessages() {
 		_, received, err := c.conn.ReadMessage()
 		c.rMutex.Unlock()
 		if err != nil {
-			c.message <- &Message{Type: "closing messages"}
 			return
 		}
 

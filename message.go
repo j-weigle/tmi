@@ -70,7 +70,6 @@ type WelcomeMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -80,7 +79,6 @@ type InvalidIRCMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -90,7 +88,6 @@ type ClearChatMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -100,7 +97,6 @@ type ClearMsgMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -110,7 +106,6 @@ type GlobalUserstateMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -120,7 +115,6 @@ type HostTargetMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -130,7 +124,6 @@ type NoticeMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 
 	Mods   []string `json:"mods"`
 	MsgId  string   `json:"msg-id"`
@@ -145,7 +138,6 @@ type ReconnectMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -155,7 +147,6 @@ type RoomstateMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -165,7 +156,6 @@ type UsernoticeMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -175,7 +165,6 @@ type UserstateMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -185,7 +174,6 @@ type ModeMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -195,7 +183,6 @@ type NamesMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -205,7 +192,6 @@ type JoinMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -215,7 +201,6 @@ type PartMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -225,7 +210,6 @@ type PingMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -235,7 +219,6 @@ type PongMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 
@@ -245,7 +228,6 @@ type PrivmsgMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 
 	// TODO:
 	Action bool  `json:"action"`
@@ -258,7 +240,6 @@ type WhisperMessage struct {
 	RawIRC  *IRCData    `json:"raw-irc"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	Error   error       `json:"error"`
 	// TODO:
 }
 

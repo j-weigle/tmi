@@ -9,13 +9,24 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type Client interface {
+	CloseConnection() error
+	Connect() error
+	Disconnect() error
+	Done(cb func())
+	Err() error
+	Join(channel string) error
+	On(mt MessageType, cb func(Message))
+	Part(channel string) error
+	Say(channel string, message string) error
+}
+
 type client struct {
 	conn     *websocket.Conn
 	config   *clientConfig
-	done     chan bool
-	err      chan error
+	done     func()
+	err      error
 	handlers map[MessageType]func(Message)
-	message  chan Message
 	rMutex   *sync.Mutex
 	wMutex   *sync.Mutex
 }
@@ -40,15 +51,15 @@ type identityConfig struct {
 }
 
 // NewClient returns a new client using config
-func NewClient(config *clientConfig) *client {
+func NewClient(config *clientConfig) Client {
+	var handlers = make(map[MessageType]func(Message))
 	var readMutex = &sync.Mutex{}
 	var writeMutex = &sync.Mutex{}
 	return &client{
-		config: config,
-		done:   make(chan bool),
-		err:    make(chan error),
-		rMutex: readMutex,
-		wMutex: writeMutex,
+		config:   config,
+		handlers: handlers,
+		rMutex:   readMutex,
+		wMutex:   writeMutex,
 	}
 }
 

@@ -43,7 +43,7 @@ func parseIRCMessage(message string) *IRCData {
 	return ircData
 }
 
-func parseNoticeMessage(ircData *IRCData) *NoticeMessage {
+func parseNoticeMessage(ircData *IRCData) (*NoticeMessage, error) {
 	var noticeMessage = &NoticeMessage{
 		IRCType: ircData.Command,
 		RawIRC:  ircData,
@@ -144,15 +144,14 @@ func parseNoticeMessage(ircData *IRCData) *NoticeMessage {
 		for _, failure := range loginFailures {
 			if strings.Contains(msg, failure) {
 				noticeMessage.MsgId = "login-failure"
-				noticeMessage.Error = fmt.Errorf("login authentication\n" + msg)
-				return noticeMessage
+				return noticeMessage, fmt.Errorf("login authentication\n" + msg)
 			}
 		}
 		noticeMessage.MsgId = "parse-error"
-		noticeMessage.Error = fmt.Errorf("could not parse NOTICE:\n" + ircData.Raw)
+		return noticeMessage, fmt.Errorf("could not parse NOTICE:\n" + ircData.Raw)
 	}
 
-	return noticeMessage
+	return noticeMessage, nil
 }
 
 func parseParams(rawParams []string) []string {

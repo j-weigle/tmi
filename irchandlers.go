@@ -132,19 +132,25 @@ func (c *client) tmiTwitchTvCommandHOSTTARGET(ircData *IRCData) {
 	fmt.Println("Got HOSTTARGET")
 }
 func (c *client) tmiTwitchTvCommandNOTICE(ircData *IRCData) {
-	var noticeMessage = parseNoticeMessage(ircData)
-	if noticeMessage.Error != nil {
-		c.err <- noticeMessage.Error
+
+	var noticeMessage, err = parseNoticeMessage(ircData)
+	if err != nil {
+		// TODO: handle communicating error back to callback
+		// perhaps do this by having each one default to raw messages
+		// and have raw message contain the error message in it
 		if noticeMessage.MsgId == "login-failure" {
-			err := c.Disconnect()
+			c.err = err
+			err = c.Disconnect()
 			if err != nil {
 				c.CloseConnection()
 			}
-			close(c.done)
+			if c.done != nil {
+				c.done()
+			}
 			return
 		}
 	}
-	if h, ok := c.handlers[noticeMessage.Type]; ok {
+	if h, ok := c.handlers[NOTICE]; ok {
 		if h != nil {
 			h(noticeMessage)
 		}

@@ -15,15 +15,18 @@ func TestLoginFailure(t *testing.T) {
 	config.Channels = []string{"#twitch"}
 
 	client := NewClient(config)
+	client.Done(func() {
+		var err = client.Err()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			t.Errorf("client was supposed to error on login authentication")
+		}
+	})
+
 	err := client.Connect()
 	if err != nil {
 		t.Errorf("failed before being able to read from client.err")
-	}
-	err = <-client.err
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		t.Errorf("client was supposed to error on login authentication")
 	}
 }
 
@@ -36,35 +39,21 @@ func TestDoubleConnect(t *testing.T) {
 	config.Channels = []string{"twitch"}
 
 	client := NewClient(config)
+
 	err := client.Connect()
 	if err != nil {
 		t.Errorf("failed on initial connection:")
 		t.Error(err)
 	}
-
 	// attempt to reconnect after 5 seconds, then disconnect
-	go func() {
-		time.Sleep(time.Second * 5)
-		client.Connect()
-		time.Sleep(time.Second * 5)
-		err = client.Disconnect()
-		if err != nil {
-			client.CloseConnection()
-		}
-		close(client.done)
-	}()
-
-	for {
-		select {
-		case err = <-client.err:
-			t.Error(err)
-		case message := <-client.message:
-			if message != nil {
-				fmt.Println("type: ", message.GetType())
-			}
-		case <-client.done:
-			fmt.Println("done")
-			return
-		}
+	time.Sleep(time.Second * 5)
+	err = client.Connect()
+	if err != nil {
+		t.Error(err)
+	}
+	time.Sleep(time.Second * 5)
+	err = client.Disconnect()
+	if err != nil {
+		client.CloseConnection()
 	}
 }

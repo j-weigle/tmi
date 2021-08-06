@@ -1,7 +1,7 @@
 package tmi
 
 import (
-	"fmt"
+	"errors"
 	"math"
 	"net/url"
 	"strings"
@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	wssServ = "irc-ws.chat.twitch.tv:443"
-	wsServ  = "irc-ws.chat.twitch.tv:80"
+	twitchWSSHost = "irc-ws.chat.twitch.tv:443"
+	twitchWSHost  = "irc-ws.chat.twitch.tv:80"
 )
 
 // CloseConnection closes the connection using websocket.Conn.Close()
@@ -27,9 +27,9 @@ func (c *client) Connect() error {
 	var u url.URL
 
 	if c.config.Connection.secure {
-		u = url.URL{Scheme: "wss", Host: wssServ}
+		u = url.URL{Scheme: "wss", Host: twitchWSSHost}
 	} else {
-		u = url.URL{Scheme: "ws", Host: wsServ}
+		u = url.URL{Scheme: "ws", Host: twitchWSHost}
 	}
 
 	// Make sure the connection is not already open before connecting
@@ -44,7 +44,6 @@ func (c *client) Connect() error {
 	if err != nil {
 		return err
 	}
-	c.message = make(chan Message, 50)
 
 	go c.readMessages()
 
@@ -69,6 +68,15 @@ func (c *client) Disconnect() error {
 	err := c.conn.WriteMessage(websocket.CloseMessage,
 		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	c.wMutex.Unlock()
+	return err
+}
+
+func (c *client) Done(cb func()) {
+	c.done = cb
+}
+
+func (c *client) Err() error {
+	var err = c.err
 	return err
 }
 
@@ -97,10 +105,10 @@ func (c *client) Part(channel string) error {
 // Say sends a PRIVMSG message in channel
 func (c *client) Say(channel string, message string) error {
 	if strings.HasPrefix(c.config.Identity.username, "justinfan") {
-		return fmt.Errorf("cannot send messages as an anonymous user")
+		return errors.New("cannot send messages as an anonymous user")
 	}
 	if len(message) >= 500 {
-		return fmt.Errorf("twitch chat's message length limit is 500 characters")
+		return errors.New("twitch chat's message length limit is 500 characters")
 	}
 
 	if !strings.HasPrefix(channel, "#") {
@@ -119,7 +127,7 @@ func (c *client) handleMessage(rawMessage string) {
 				h(c, ircData)
 			}
 		} else {
-			c.err <- fmt.Errorf("could not handle message with tmi.twitch.tv prefix:\n" + rawMessage)
+			c.err = errors.New("could not handle message with tmi.twitch.tv prefix:\n" + rawMessage)
 		}
 	case "jtv":
 		if h, ok := jtvHandlers(ircData.Command); ok {
@@ -127,7 +135,7 @@ func (c *client) handleMessage(rawMessage string) {
 				h(c, ircData)
 			}
 		} else {
-			c.err <- fmt.Errorf("could not handle message with jtv prefix:\n" + rawMessage)
+			c.err = errors.New("could not handle message with jtv prefix:\n" + rawMessage)
 		}
 	default:
 		if h, ok := otherHandlers(ircData.Command); ok {
@@ -135,14 +143,12 @@ func (c *client) handleMessage(rawMessage string) {
 				h(c, ircData)
 			}
 		} else {
-			c.err <- fmt.Errorf("could not handle message with { %s } as prefix:\n"+rawMessage, ircData.Prefix)
+			c.err = errors.New("could not handle message with { " + ircData.Prefix + " } as prefix:\n" + rawMessage)
 		}
 	}
 }
 
 func (c *client) readMessages() {
-	defer close(c.message)
-
 	for {
 		c.rMutex.Lock()
 		_, received, err := c.conn.ReadMessage()
@@ -164,17 +170,17 @@ func (c *client) readMessages() {
 func (c *client) Reconnect() error {
 	var maxAttempts = c.config.Connection.maxReconnectAttempts
 	if maxAttempts == 0 {
-		return fmt.Errorf("tmi.client.reconnect(): max attempts was 0")
+		return errors.New("tmi.client.reconnect(): max attempts was 0")
 	}
 	var maxInterval = time.Duration(c.config.Connection.maxReconnectInterval)
 	if maxInterval < 0 {
-		return fmt.Errorf("tmi.client.reconnect(): max interval was negative")
+		return errors.New("tmi.client.reconnect(): max interval was negative")
 	}
 
 	var err = c.Connect()
 	for i := 1; err != nil; i++ {
 		if maxAttempts >= 0 && i >= maxAttempts {
-			return fmt.Errorf("tmi.client.reconnect(): max attempts to reconnect reached")
+			return errors.New("tmi.client.reconnect(): max attempts to reconnect reached")
 		}
 		sleepDuration := time.Duration(math.Pow(2, float64(i)))
 		if sleepDuration > maxInterval {

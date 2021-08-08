@@ -65,167 +65,161 @@ type IRCData struct {
 }
 
 type WelcomeMessage struct {
-	From    string      `json:"from"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	// TODO:
 }
 
 type InvalidIRCMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type ClearChatMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type ClearMsgMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type GlobalUserstateMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type HostTargetMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type NoticeMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
-	Mods   []string `json:"mods"`
-	MsgId  string   `json:"msg-id"`
-	Notice string   `json:"notice"`
-	On     bool     `json:"on"`
-	Vips   []string `json:"vips"`
+	Mods   []string `json:"mods"`   // list of mods for Channel when Notice is set to mods
+	MsgID  string   `json:"msg-id"` // msg-id value from Data.Tags, or parse-error / login-error if the key doesn't exist
+	Notice string   `json:"notice"` // Notice is one of: automod, emoteonly, mods, uniquechat, subonly, vips, notice (notice is the default)
+	On     bool     `json:"on"`     // set when Notice is one of: emoteonly, uniquechat, subonly
+	VIPs   []string `json:"vips"`   // list of vips for Channel when Notice is set to vips
 }
 
 type ReconnectMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type RoomstateMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type UsernoticeMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type UserstateMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type ModeMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type NamesMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type JoinMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type PartMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
 }
 
 type PingMessage struct {
-	From    string      `json:"from"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	// TODO:
 }
 
 type PongMessage struct {
-	From    string      `json:"from"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	// TODO:
 }
 
 type PrivmsgMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
@@ -235,9 +229,9 @@ type PrivmsgMessage struct {
 }
 
 type WhisperMessage struct {
-	From    string      `json:"from"`
+	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
-	RawIRC  *IRCData    `json:"raw-irc"`
+	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 	// TODO:
@@ -249,7 +243,7 @@ type Badge struct {
 }
 
 type Emote struct {
-	Id    string `json:"id"`
+	ID    string `json:"id"`
 	Start int    `json:"start"`
 	End   int    `json:"end"`
 	Raw   string `json:"raw"`
@@ -264,14 +258,14 @@ type User struct {
 	DisplayName  string   `json:"displayname"`
 	Emotes       []*Emote `json:"emotes"`
 	Flags        string   `json:"flags"`
-	Id           string   `json:"id"`
+	ID           string   `json:"id"`
 	Mod          bool     `json:"mod"`
 	Name         string   `json:"name"`
-	RoomId       string   `json:"roomid"`
+	RoomID       string   `json:"roomid"`
 	Subscriber   bool     `json:"subscriber"`
 	TmiSentTs    string   `json:"tmisentts"`
 	Turbo        bool     `json:"turbo"`
-	UserId       string   `json:"userid"`
+	UserID       string   `json:"userid"`
 	UserType     string   `json:"usertype"`
 	BadgeInfoRaw string   `json:"badgeinforaw"`
 	BadgesRaw    string   `json:"badgesraw"`

@@ -3,14 +3,16 @@ package tmi
 import (
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestNewClientConfig(t *testing.T) {
-	connection := &connectionConfig{true, true, 1000, -1, 30000}
+	connection := &connectionConfig{true, true, false, 1000, -1, 30000}
 	id := &identityConfig{}
+	pinger := &pingConfig{time.Second * 60, time.Second * 5}
 	channels := []string{}
 
-	want := &clientConfig{connection, id, channels}
+	want := &clientConfig{channels, connection, id, pinger}
 	got := NewClientConfig()
 
 	if *want.Connection != *got.Connection {
@@ -32,7 +34,7 @@ func TestNewClientConfig(t *testing.T) {
 
 func TestSetToAnonymous(t *testing.T) {
 	config := NewClientConfig()
-	config.Identity.SetToAnonymous()
+	config.Identity.Anonymous()
 
 	jf := config.Identity.username[:9]
 	if jf != "justinfan" {

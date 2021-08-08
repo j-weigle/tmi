@@ -2,6 +2,7 @@ package tmi
 
 import (
 	"fmt"
+	"time"
 )
 
 func tmiTwitchTvHandlers(cmd string) (func(*client, *IRCData), bool) {
@@ -116,8 +117,44 @@ func otherHandlers(cmd string) (func(*client, *IRCData), bool) {
 }
 
 func (c *client) tmiTwitchTvCommand001(ircData *IRCData) {
-	// TODO: set ping loop to confirm still connected
-	fmt.Println("Got 001: Welcome, GLHF") // "Welcome, GLHF"
+	go func(c *client) {
+		for {
+			select {
+			case <-c.reconnecting.ch:
+				return
+			case <-c.userDisconnect.ch:
+				return
+			case <-c.rcvdMsg:
+				continue
+			case <-time.After(c.config.Pinger.wait):
+				var err = c.send("PING :tmi.twitch.tv")
+				if err != nil {
+					return
+				}
+				select {
+				case <-c.rcvdPong:
+					continue
+				case <-time.After(c.config.Pinger.timeout):
+					c.reconnecting.Notify()
+					c.Reconnect()
+				}
+			}
+		}
+	}(c)
+
+	var welcomeMessage = &WelcomeMessage{
+		IRCType: ircData.Command,
+		Data:    ircData,
+		Type:    WELCOME,
+	}
+	if len(ircData.Params) >= 1 {
+		welcomeMessage.Text = ircData.Params[0]
+	}
+	if h, ok := c.handlers[WELCOME]; ok {
+		if h != nil {
+			h(welcomeMessage)
+		}
+	}
 }
 func (c *client) tmiTwitchTvCommand421(ircData *IRCData) {
 	fmt.Println("Got 421: invalid IRC command") // invalid IRC command
@@ -132,17 +169,18 @@ func (c *client) tmiTwitchTvCommandHOSTTARGET(ircData *IRCData) {
 	fmt.Println("Got HOSTTARGET")
 }
 func (c *client) tmiTwitchTvCommandNOTICE(ircData *IRCData) {
-
 	var noticeMessage, err = parseNoticeMessage(ircData)
 	if err != nil {
-		// TODO: handle communicating error back to callback
-		// perhaps do this by having each one default to raw messages
-		// and have raw message contain the error message in it
-		if noticeMessage.MsgId == "login-failure" {
-			c.err = err
-			err = c.Disconnect()
+		if c.onError != nil {
+			c.onError(err)
+		}
+		if noticeMessage.MsgID == "login_failure" {
+			c.fatal = err
+			err = c.Disconnect() // pretend to be user disconnecting, since it's fatal
 			if err != nil {
-				c.CloseConnection()
+				if c.onError != nil {
+					c.onError(err)
+				}
 			}
 			if c.done != nil {
 				c.done()
@@ -189,8 +227,10 @@ func (c *client) otherCommandPING(ircData *IRCData) {
 	c.send("PONG :tmi.twitch.tv")
 }
 func (c *client) otherCommandPONG(ircData *IRCData) {
-	// TODO: handle responses from sent pings to check latency and timeouts
-	fmt.Println("Got PONG")
+	select {
+	case c.rcvdPong <- true:
+	default:
+	}
 }
 func (c *client) otherCommandPRIVMSG(ircData *IRCData) {
 	fmt.Println("Got PRIVMSG")

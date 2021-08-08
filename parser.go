@@ -46,12 +46,12 @@ func parseIRCMessage(message string) *IRCData {
 func parseNoticeMessage(ircData *IRCData) (*NoticeMessage, error) {
 	var noticeMessage = &NoticeMessage{
 		IRCType: ircData.Command,
-		RawIRC:  ircData,
+		Data:    ircData,
 		Type:    NOTICE,
 		Notice:  "notice",
 	}
 	if len(ircData.Params) >= 1 {
-		noticeMessage.From = strings.TrimPrefix(ircData.Params[0], "#")
+		noticeMessage.Channel = strings.TrimPrefix(ircData.Params[0], "#")
 	}
 	var msg string
 	if len(ircData.Params) >= 2 {
@@ -59,7 +59,7 @@ func parseNoticeMessage(ircData *IRCData) (*NoticeMessage, error) {
 		noticeMessage.Text = msg
 	}
 	if msgId, ok := ircData.Tags["msg-id"]; ok {
-		noticeMessage.MsgId = msgId
+		noticeMessage.MsgID = msgId
 
 		switch msgId {
 		// Automod
@@ -110,13 +110,13 @@ func parseNoticeMessage(ircData *IRCData) (*NoticeMessage, error) {
 			noticeMessage.Notice = "vips"
 		case "vips_success":
 			noticeMessage.Notice = "vips"
-			noticeMessage.Vips = []string{}
+			noticeMessage.VIPs = []string{}
 			var vipStr = msg
 			vipStr = strings.TrimSuffix(vipStr, ".")
 			var vips = strings.Split(strings.ToLower(strings.Split(vipStr, ": ")[1]), ", ")
 			for _, v := range vips {
 				if v != "" {
-					noticeMessage.Vips = append(noticeMessage.Vips, v)
+					noticeMessage.VIPs = append(noticeMessage.VIPs, v)
 				}
 			}
 
@@ -143,12 +143,12 @@ func parseNoticeMessage(ircData *IRCData) (*NoticeMessage, error) {
 		}
 		for _, failure := range loginFailures {
 			if strings.Contains(msg, failure) {
-				noticeMessage.MsgId = "login-failure"
+				noticeMessage.MsgID = "login_failure"
 				return noticeMessage, fmt.Errorf("login authentication\n" + msg)
 			}
 		}
-		noticeMessage.MsgId = "parse-error"
-		return noticeMessage, fmt.Errorf("could not parse NOTICE:\n" + ircData.Raw)
+		noticeMessage.MsgID = "parse_error"
+		return noticeMessage, fmt.Errorf("could not properly parse NOTICE:\n" + ircData.Raw)
 	}
 
 	return noticeMessage, nil

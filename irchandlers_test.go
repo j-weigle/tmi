@@ -12,11 +12,11 @@ func TestLoginFailure(t *testing.T) {
 	}
 	config := NewClientConfig()
 	config.Identity.Set("a", "blah")
-	config.Channels = []string{"#twitch"}
+	config.Connection.SetSync(true)
 
 	client := NewClient(config)
 	client.Done(func() {
-		var err = client.Err()
+		var err = client.Failure()
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -26,7 +26,7 @@ func TestLoginFailure(t *testing.T) {
 
 	err := client.Connect()
 	if err != nil {
-		t.Errorf("failed before being able to read from client.err")
+		t.Errorf("connection error occurred instead of login error")
 	}
 }
 
@@ -35,7 +35,7 @@ func TestDoubleConnect(t *testing.T) {
 		t.Skip("skip:TestDoubleConnect, reason:short mode")
 	}
 	config := NewClientConfig()
-	config.Identity.SetToAnonymous()
+	config.Identity.Anonymous()
 	config.Channels = []string{"twitch"}
 
 	client := NewClient(config)
@@ -54,6 +54,6 @@ func TestDoubleConnect(t *testing.T) {
 	time.Sleep(time.Second * 5)
 	err = client.Disconnect()
 	if err != nil {
-		client.CloseConnection()
+		t.Error(err)
 	}
 }

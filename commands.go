@@ -108,7 +108,6 @@ func (c *client) connect(u url.URL) error {
 		return err
 	}
 
-	// Create a waitgroup in the case that the client is set to run synchronously.
 	var wg = &sync.WaitGroup{}
 	wg.Add(1)
 	go c.spawnReader(wg)

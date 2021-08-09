@@ -67,7 +67,6 @@ type IRCData struct {
 type WelcomeMessage struct {
 	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
-	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 }
 

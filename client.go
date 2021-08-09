@@ -15,13 +15,10 @@ type Client interface {
 	Connect() error
 
 	// Disconnect sends a close message to the server and lets the server close the connection.
-	Disconnect() error
+	Disconnect()
 
-	// Done sets the callback function to be called when a client is done (typically due to a fatal error).
-	Done(cb func())
-
-	// Failure returns the fatal error that caused client.done to be called if there was an error.
-	Failure() error
+	// Done sets the callback function for when a client is done to cb (intended for use with fatal errors).
+	Done(cb func(fatal error))
 
 	// Join joins channel.
 	Join(channel string) error
@@ -43,32 +40,32 @@ type Client interface {
 }
 
 type client struct {
-	conn           *websocket.Conn
-	config         *clientConfig
-	done           func()                        // callback function to be called on fatal errors
-	fatal          error                         // will be set on fatal errors, when done is called
-	handlers       map[MessageType]func(Message) // callback functions for each MessageType
-	onError        func(error)                   // callback function for non-fatal errors
-	rcvdMsg        chan bool                     // when conn reads, notifies ping loop
-	rcvdPong       chan bool                     // when pong received, notifies ping loop
-	reconnecting   notifier                      // notification of reconnect
-	rMutex         *sync.Mutex                   // connection read mutex
-	wMutex         *sync.Mutex                   // connection write mutex
-	userDisconnect notifier                      // notification of user manual disconnect
+	conn             *websocket.Conn
+	config           *clientConfig
+	done             func(error)                   // callback function for fatal errors.
+	handlers         map[MessageType]func(Message) // callback functions for each MessageType.
+	inbound          chan string                   // for sending inbound messages to the handlers, mostly used for a buffer
+	notifFatal       notifier                      // notification of fatal error.
+	notifDisconnect  notifier                      // notification of user manual disconnect.
+	notifReconnect   notifier                      // notification of reconnect.
+	notifPingerDone  notifier                      // notification of pinger returning.
+	onError          func(error)                   // callback function for non-fatal errors.
+	outbound         chan string                   // for sending outbound messages to the writer
+	rcvdMsg          chan bool                     // when conn reads, notifies ping loop.
+	rcvdPong         chan bool                     // when pong received, notifies ping loop.
+	reconnectCounter int                           // manages keeping track of reconnect attempts before a successful attempt
 }
 
 type clientConfig struct {
-	Channels   []string          // which channels the client will connect to
-	Connection *connectionConfig // how the client will connect and reconnect
-	Identity   *identityConfig   // who the client logs in as
-	Pinger     *pingConfig       // how often to ping, and timeout
+	Channels   []string          // which channels the client will connect to.
+	Connection *connectionConfig // how the client will connect and reconnect.
+	Identity   *identityConfig   // who the client logs in as.
+	Pinger     *pingConfig       // how often to ping, and timeout.
 }
 
 type connectionConfig struct {
 	reconnect            bool // if true, reconnect on reconnect requests and non-fatal errors.
 	secure               bool // if true, connect to to Twitch's secure server(port 443), otherwise insecure (port 80).
-	sync                 bool // if true, connections block.
-	reconnectInterval    int  // initial interval between reconnect attempts.
 	maxReconnectAttempts int  // maximum number of attempts to reconnect when disconnected.
 	maxReconnectInterval int  // maximum interval between reconnect attempts.
 }
@@ -79,18 +76,18 @@ type identityConfig struct {
 }
 
 type pingConfig struct {
-	wait    time.Duration // how often to send pings when no messages have been received
+	wait    time.Duration // how long to wait before sending a ping when no messages have been received
 	timeout time.Duration // how long to wait on a pong before reconnecting
 }
 
-// notifiers Reset() and Notify() are used in combination to notify multiple goroutines
+// notifiers Reset() and Notify() are used in combination to notify multiple goroutines.
 type notifier struct {
 	mutex sync.Mutex
 	once  *sync.Once
 	ch    chan struct{}
 }
 
-// Reset sets the notifier to be ready to be used
+// Reset sets the notifier to be ready to be used.
 func (n *notifier) Reset() {
 	n.mutex.Lock()
 	n.once = &sync.Once{}
@@ -98,7 +95,7 @@ func (n *notifier) Reset() {
 	n.mutex.Unlock()
 }
 
-// Notify uses the notifier and makes it unusable until reset
+// Notify uses the notifier and makes it unusable until reset.
 func (n *notifier) Notify() {
 	n.mutex.Lock()
 	n.once.Do(func() {
@@ -111,15 +108,12 @@ func (n *notifier) Notify() {
 func NewClient(c *clientConfig) Client {
 	var config = c.duplicate()
 	var handlers = make(map[MessageType]func(Message))
-	var readMutex = &sync.Mutex{}
-	var writeMutex = &sync.Mutex{}
 	return &client{
 		config:   config,
 		handlers: handlers,
+		inbound:  make(chan string, 512),
+		outbound: make(chan string, 512),
 		rcvdMsg:  make(chan bool),
-		rcvdPong: make(chan bool),
-		rMutex:   readMutex,
-		wMutex:   writeMutex,
 	}
 }
 
@@ -129,10 +123,12 @@ func (c *clientConfig) duplicate() *clientConfig {
 	var conn = *c.Connection
 	var id = *c.Identity
 	var chans = make([]string, len(c.Channels))
+	var pinger = *c.Pinger
 	copy(chans, c.Channels)
 	config.Connection = &conn
 	config.Identity = &id
 	config.Channels = chans
+	config.Pinger = &pinger
 	return config
 }
 
@@ -159,9 +155,11 @@ func (c *connectionConfig) SetReconnect(reconnect bool) {
 
 // SetReconnectSettings sets how often and how many times the client
 // will attempt to reconnect to the server in the case of a disconnect.
-func (c *connectionConfig) SetReconnectSettings(interval, maxAttempts, maxInterval int) {
-	c.reconnectInterval = interval
+func (c *connectionConfig) SetReconnectSettings(maxAttempts, maxInterval int) {
 	c.maxReconnectAttempts = maxAttempts
+	if maxInterval < 5000 {
+		maxInterval = 5000
+	}
 	c.maxReconnectInterval = maxInterval
 }
 
@@ -172,25 +170,16 @@ func (c *connectionConfig) SetSecure(secure bool) {
 	c.secure = secure
 }
 
-// SetSync sets whether the client should block when connecting.
-func (c *connectionConfig) SetSync(sync bool) {
-	c.sync = sync
-}
-
 // Default sets the connection configuration options to their recommended defaults.
 //
 // Default options:
 // reconnect            = true,
 // secure               = true,
-// sync                 = false,
-// reconnectInterval    = 1000,
 // maxReconnectAttempts = -1 (infinite),
 // maxReconnectInterval = 30000 milliseconds,
 func (c *connectionConfig) Default() {
 	c.reconnect = true
 	c.secure = true
-	c.sync = false
-	c.reconnectInterval = 1000
 	c.maxReconnectAttempts = -1
 	c.maxReconnectInterval = 30000
 }

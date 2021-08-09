@@ -1,7 +1,7 @@
 package tmi
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 )
 
@@ -144,11 +144,11 @@ func parseNoticeMessage(ircData *IRCData) (*NoticeMessage, error) {
 		for _, failure := range loginFailures {
 			if strings.Contains(msg, failure) {
 				noticeMessage.MsgID = "login_failure"
-				return noticeMessage, fmt.Errorf("login authentication\n" + msg)
+				return noticeMessage, errors.New(msg)
 			}
 		}
 		noticeMessage.MsgID = "parse_error"
-		return noticeMessage, fmt.Errorf("could not properly parse NOTICE:\n" + ircData.Raw)
+		return noticeMessage, errors.New("could not properly parse NOTICE:\n" + ircData.Raw)
 	}
 
 	return noticeMessage, nil

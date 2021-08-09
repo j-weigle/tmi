@@ -16,6 +16,12 @@ const (
 	twitchWSHost  = "irc-ws.chat.twitch.tv:80"
 )
 
+var (
+	errReconnectNotification  = errors.New("reconnect")
+	errDisconnectNotification = errors.New("disconnect")
+	errFatalNotification      = errors.New("fatal")
+)
+
 // Connect
 func (c *client) Connect() error {
 	var err error
@@ -27,58 +33,118 @@ func (c *client) Connect() error {
 		u = url.URL{Scheme: "ws", Host: twitchWSHost}
 	}
 
-	// Make sure the connection is not already open before connecting
+	var maxReconnectAttempts = c.config.Connection.maxReconnectAttempts
+	var maxReconnectInterval = time.Duration(c.config.Connection.maxReconnectInterval)
+
+	for {
+		err = c.connect(u)
+
+		switch err {
+		case errReconnectNotification:
+			var sleepDuration time.Duration
+			var overflowPoint = 64 // technically 63, but using i - 1
+
+			if maxReconnectAttempts == 0 {
+				err = errors.New("max reconnect attempts was 0")
+				c.callDone(err)
+				return err
+			}
+
+			i := c.reconnectCounter
+			c.reconnectCounter++
+
+			if c.reconnectCounter < 0 { // in case of overflow, reset to overflow point in order to maintain max interval
+				c.reconnectCounter = overflowPoint
+			}
+
+			if maxReconnectAttempts >= 0 && i >= maxReconnectAttempts {
+				err = errors.New("max attempts to reconnect reached")
+				c.callDone(err)
+				return err
+			}
+
+			if i == 0 {
+				sleepDuration = 0
+			} else if i > 0 && i < overflowPoint {
+				// i - 1 to compensate for initial reconnect attempt being 0
+				sleepDuration = time.Duration(math.Pow(2, float64(i-1)))
+			} else {
+				sleepDuration = maxReconnectInterval
+			}
+
+			if sleepDuration > maxReconnectInterval {
+				sleepDuration = maxReconnectInterval
+			}
+
+			time.Sleep(sleepDuration)
+			continue
+		default:
+			return err
+		}
+	}
+}
+
+func (c *client) connect(u url.URL) error {
+	var err error
+	// Make sure the connection is not already open before connecting.
 	if c.conn != nil {
 		err = c.disconnect()
-	}
-	if err != nil {
-		return err
-	}
-
-	c.conn, _, err = websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		return err
-	}
-
-	var wg = &sync.WaitGroup{}
-	if c.config.Connection.sync {
-		wg.Add(1)
-	}
-	go c.readMessages(wg)
-
-	err = c.sendConnectSequence()
-	if err != nil {
-		return err
-	}
-
-	for _, channel := range c.config.Channels {
-		err = c.Join(channel)
 		if err != nil {
 			return err
 		}
 	}
 
-	if c.config.Connection.sync {
-		wg.Wait()
+	// Reset the notifiers for disconnects, fatal errors, and reconnects.
+	c.notifDisconnect.Reset()
+	c.notifFatal.Reset()
+	c.notifReconnect.Reset()
+
+	// make sure pingerDone channel is allocated, then closed, so if pinger is never spawned, it doesn't block
+	c.notifPingerDone.Reset()
+	c.notifPingerDone.Notify()
+
+	// Establish a connection to the URL defined by u.
+	if c.conn, _, err = websocket.DefaultDialer.Dial(u.String(), nil); err != nil {
+		return err
 	}
 
-	return nil
+	// Create a waitgroup in the case that the client is set to run synchronously.
+	var wg = &sync.WaitGroup{}
+	wg.Add(1)
+	go c.spawnReader(wg)
+	wg.Add(1)
+	go c.spawnWriter(wg)
+
+	c.sendConnectSequence()
+
+	// TODO: c.Join(c.config.Channels)
+
+	err = c.connectionManager()
+	c.notifReconnect.Notify()
+
+	// make sure reader and writer have finished
+	wg.Wait()
+
+	// writer is done, so disconnect safe to call
+	c.disconnect()
+
+	// make sure pinger has finished
+	<-c.notifPingerDone.ch
+
+	return err
 }
 
-// Disconnect sends a close message to the server and lets the server close the connection.
+// Disconnect closes the connection to the server, and does not attempt to reconnect
+func (c *client) Disconnect() {
+	c.notifDisconnect.Notify() // let all relevant goroutines know the user called Disconnect
+}
+
+// disconnect sends a close message to the server and lets the server close the connection.
 // If an error occurs telling the server to close, the connection is closed without waiting.
-func (c *client) Disconnect() error {
-	c.userDisconnect.Notify() // let all relevant goroutines know the user called Disconnect
-	return c.disconnect()
-}
-
-// disconnect is a helper function for Disconnect that allows for server disconnect calls
-// without notifying goroutines of the disconnect.
+// Should only called from writer or before writer is spawned due to websocket.Conn.WriteMessage call.
 func (c *client) disconnect() error {
-	c.wMutex.Lock()
 	err := c.conn.WriteMessage(websocket.CloseMessage,
 		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	c.wMutex.Unlock()
 	if err != nil {
 		return c.conn.Close()
 	}
@@ -86,22 +152,36 @@ func (c *client) disconnect() error {
 }
 
 // Done sets the callback function to be called when a client is done (typically due to a fatal error).
-func (c *client) Done(cb func()) {
+func (c *client) Done(cb func(fatal error)) {
 	c.done = cb
-}
-
-// Failure returns the fatal error that caused client.done to be called if there was an error.
-func (c *client) Failure() error {
-	return c.fatal
 }
 
 // Join joins channel.
 func (c *client) Join(channel string) error {
+	if channel == "" {
+		return errors.New("channel was empty string")
+	}
+	channel = strings.ToLower(channel)
 	if !strings.HasPrefix(channel, "#") {
 		channel = "#" + channel
 	}
 
 	return c.send("JOIN " + channel)
+}
+
+// TODO: handle joins without breaking Twitch JOIN limits
+func (c *client) J_oin(channels []string) error {
+	if channels == nil || len(channels) < 1 {
+		return errors.New("channels was empty or nil")
+	}
+	for i, channel := range channels {
+		channels[i] = strings.ToLower(channel)
+		if !strings.HasPrefix(channel, "#") {
+			channels[i] = "#" + channel
+		}
+	}
+
+	return nil
 }
 
 // On sets the callback function to cb for the MessageType mt.
@@ -144,7 +224,7 @@ func (c *client) UpdatePassword(password string) {
 }
 
 func (c *client) handleMessage(rawMessage string) {
-	ircData := parseIRCMessage(rawMessage)
+	var ircData = parseIRCMessage(rawMessage)
 
 	// TODO: parseRawMessage for each else below, and call the UNSET handler
 	switch ircData.Prefix {
@@ -154,9 +234,7 @@ func (c *client) handleMessage(rawMessage string) {
 				h(c, ircData)
 			}
 		} else {
-			if c.onError != nil {
-				c.onError(errors.New("could not handle message with tmi.twitch.tv prefix:\n" + rawMessage))
-			}
+			c.warnUser(errors.New("could not handle message with tmi.twitch.tv prefix:\n" + rawMessage))
 		}
 	case "jtv":
 		if h, ok := jtvHandlers(ircData.Command); ok {
@@ -164,9 +242,7 @@ func (c *client) handleMessage(rawMessage string) {
 				h(c, ircData)
 			}
 		} else {
-			if c.onError != nil {
-				c.onError(errors.New("could not handle message with jtv prefix:\n" + rawMessage))
-			}
+			c.warnUser(errors.New("could not handle message with jtv prefix:\n" + rawMessage))
 		}
 	default:
 		if h, ok := otherHandlers(ircData.Command); ok {
@@ -174,84 +250,104 @@ func (c *client) handleMessage(rawMessage string) {
 				h(c, ircData)
 			}
 		} else {
-			if c.onError != nil {
-				c.onError(errors.New("could not handle message with { " + ircData.Prefix + " } as prefix:\n" + rawMessage))
-			}
+			c.warnUser(errors.New("could not handle message with { " + ircData.Prefix + " } prefix:\n" + rawMessage))
 		}
 	}
 }
 
-func (c *client) readMessages(wg *sync.WaitGroup) {
-	if c.config.Connection.sync {
-		defer wg.Done()
-	}
+func (c *client) spawnReader(wg *sync.WaitGroup) {
+	defer c.notifReconnect.Notify()
+	defer wg.Done()
+
 	for {
-		c.rMutex.Lock()
 		_, received, err := c.conn.ReadMessage()
-		c.rMutex.Unlock()
 		if err != nil {
 			return
-		}
-		select {
-		case c.rcvdMsg <- true:
-		default:
 		}
 
 		data := strings.Split(string(received), "\r\n")
 		for _, rawMessage := range data {
 			if len(rawMessage) > 0 {
-				c.handleMessage(rawMessage)
+				select { // notify pinger to reset its wait timer for received messages, but don't block.
+				case c.rcvdMsg <- true:
+				default:
+				}
+				c.inbound <- rawMessage
 			}
 		}
 	}
 }
 
-// TODO: change back to private, and use it
-func (c *client) Reconnect() error {
-	var maxAttempts = c.config.Connection.maxReconnectAttempts
-	if maxAttempts == 0 {
-		return errors.New("tmi.client.reconnect(): max attempts was 0")
-	}
-	var maxInterval = time.Duration(c.config.Connection.maxReconnectInterval)
-	if maxInterval < 0 {
-		return errors.New("tmi.client.reconnect(): max interval was negative")
-	}
+func (c *client) spawnWriter(wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	var err = c.Connect()
-	for i := 1; err != nil; i++ {
-		if maxAttempts >= 0 && i >= maxAttempts {
-			return errors.New("tmi.client.reconnect(): max attempts to reconnect reached")
+	for {
+		select {
+		case <-c.notifFatal.ch:
+			c.disconnect()
+			return
+
+		case <-c.notifReconnect.ch:
+			c.disconnect()
+			return
+
+		case <-c.notifDisconnect.ch:
+			c.disconnect()
+			return
+
+		case message := <-c.outbound:
+			err := c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
+			if err != nil {
+				c.outbound <- message // store for after reconnect
+
+				c.notifReconnect.Notify()
+				return
+			}
 		}
-		sleepDuration := time.Duration(math.Pow(2, float64(i)))
-		if sleepDuration > maxInterval {
-			sleepDuration = maxInterval
-		}
-		time.Sleep(sleepDuration)
-		err = c.Connect()
 	}
-	return nil
+}
+
+func (c *client) connectionManager() error {
+	for {
+		select {
+		case rawMessage := <-c.inbound:
+			c.handleMessage(rawMessage)
+
+		case <-c.notifReconnect.ch:
+			return errReconnectNotification
+
+		case <-c.notifDisconnect.ch:
+			return errDisconnectNotification
+
+		case <-c.notifFatal.ch:
+			return errFatalNotification
+		}
+	}
 }
 
 func (c *client) send(message string) error {
-	c.wMutex.Lock()
-	err := c.conn.WriteMessage(websocket.TextMessage, []byte(message))
-	c.wMutex.Unlock()
-	return err
+	select {
+	case c.outbound <- message:
+		return nil
+	default:
+		return errors.New("message not delivered to outbound channel")
+	}
 }
 
-func (c *client) sendConnectSequence() error {
-	var err error
-	err = c.send("PASS " + c.config.Identity.password)
-	if err != nil {
-		return err
+func (c *client) sendConnectSequence() {
+	c.send("PASS " + c.config.Identity.password)
+	c.send("NICK " + c.config.Identity.username)
+	c.send("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership")
+}
+
+func (c *client) warnUser(err error) {
+	if c.onError != nil {
+		c.onError(err)
 	}
-	err = c.send("NICK " + c.config.Identity.username)
-	if err != nil {
-		return err
+}
+
+func (c *client) callDone(err error) {
+	if c.done != nil {
+		c.done(err)
 	}
-	err = c.send("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership")
-	if err != nil {
-		return err
-	}
-	return err
 }

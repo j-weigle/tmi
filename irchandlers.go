@@ -117,26 +117,33 @@ func otherHandlers(cmd string) (func(*client, *IRCData), bool) {
 }
 
 func (c *client) tmiTwitchTvCommand001(ircData *IRCData) {
+	// successful connection, reset the reconnect counter
+	c.reconnectCounter = 0
+
 	go func(c *client) {
+		c.notifPingerDone.Reset()
+		defer c.notifPingerDone.Notify()
+		// recreate each time so that there isn't a pong sitting in the channel on reconnects
+		c.rcvdPong = make(chan bool, 1)
+
 		for {
 			select {
-			case <-c.reconnecting.ch:
+			case <-c.notifFatal.ch:
 				return
-			case <-c.userDisconnect.ch:
+			case <-c.notifReconnect.ch:
+				return
+			case <-c.notifDisconnect.ch:
 				return
 			case <-c.rcvdMsg:
 				continue
 			case <-time.After(c.config.Pinger.wait):
-				var err = c.send("PING :tmi.twitch.tv")
-				if err != nil {
-					return
-				}
+				c.send("PING :tmi.twitch.tv")
+
 				select {
 				case <-c.rcvdPong:
 					continue
 				case <-time.After(c.config.Pinger.timeout):
-					c.reconnecting.Notify()
-					c.Reconnect()
+					c.notifReconnect.Notify()
 				}
 			}
 		}
@@ -146,9 +153,6 @@ func (c *client) tmiTwitchTvCommand001(ircData *IRCData) {
 		IRCType: ircData.Command,
 		Data:    ircData,
 		Type:    WELCOME,
-	}
-	if len(ircData.Params) >= 1 {
-		welcomeMessage.Text = ircData.Params[0]
 	}
 	if h, ok := c.handlers[WELCOME]; ok {
 		if h != nil {
@@ -171,22 +175,12 @@ func (c *client) tmiTwitchTvCommandHOSTTARGET(ircData *IRCData) {
 func (c *client) tmiTwitchTvCommandNOTICE(ircData *IRCData) {
 	var noticeMessage, err = parseNoticeMessage(ircData)
 	if err != nil {
-		if c.onError != nil {
-			c.onError(err)
-		}
 		if noticeMessage.MsgID == "login_failure" {
-			c.fatal = err
-			err = c.Disconnect() // pretend to be user disconnecting, since it's fatal
-			if err != nil {
-				if c.onError != nil {
-					c.onError(err)
-				}
-			}
-			if c.done != nil {
-				c.done()
-			}
+			c.notifFatal.Notify()
+			c.callDone(err)
 			return
 		}
+		c.warnUser(err)
 	}
 	if h, ok := c.handlers[NOTICE]; ok {
 		if h != nil {

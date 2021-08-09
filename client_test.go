@@ -7,9 +7,12 @@ import (
 )
 
 func TestNewClientConfig(t *testing.T) {
-	connection := &connectionConfig{true, true, false, 1000, -1, 30000}
+	connection := &connectionConfig{true, true, -1, 30000}
 	id := &identityConfig{}
-	pinger := &pingConfig{time.Second * 60, time.Second * 5}
+	pinger := &pingConfig{
+		wait:    time.Second * 60,
+		timeout: time.Second * 5,
+	}
 	channels := []string{}
 
 	want := &clientConfig{channels, connection, id, pinger}

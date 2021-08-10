@@ -2,7 +2,6 @@ package tmi
 
 import (
 	"fmt"
-	"time"
 )
 
 func tmiTwitchTvHandlers(cmd string) (func(*client, *IRCData), bool) {
@@ -120,45 +119,22 @@ func (c *client) tmiTwitchTvCommand001(ircData *IRCData) {
 	// successful connection, reset the reconnect counter
 	c.reconnectCounter = 0
 
-	go func(c *client) {
-		c.notifPingerDone.Reset()
-		defer c.notifPingerDone.Notify()
-		// recreate each time so that there isn't a pong sitting in the channel on reconnects
-		c.rcvdPong = make(chan bool, 1)
-
-		for {
-			select {
-			case <-c.notifFatal.ch:
-				return
-			case <-c.notifReconnect.ch:
-				return
-			case <-c.notifDisconnect.ch:
-				return
-			case <-c.rcvdMsg:
-				continue
-			case <-time.After(c.config.Pinger.wait):
-				c.send("PING :tmi.twitch.tv")
-
-				select {
-				case <-c.rcvdPong:
-					continue
-				case <-time.After(c.config.Pinger.timeout):
-					c.notifReconnect.Notify()
-				}
-			}
-		}
-	}(c)
+	c.spawnPinger()
 
 	var welcomeMessage = &WelcomeMessage{
 		IRCType: ircData.Command,
 		Data:    ircData,
 		Type:    WELCOME,
 	}
-	if h, ok := c.handlers[WELCOME]; ok {
-		if h != nil {
-			h(welcomeMessage)
-		}
-	}
+
+	c.callMessageHandler(WELCOME, welcomeMessage)
+	// TODO: for each handler, although probably not this one...
+	// if err == nil {
+	// 	c.callMessageHandler(WELCOME, welcomeMessage)
+	// } else {
+	// 	c.callMessageHandler(WELCOME, unsetMessage)
+	// 	c.callMessageHandler(UNSET, unsetMessage)
+	// }
 }
 func (c *client) tmiTwitchTvCommand421(ircData *IRCData) {
 	fmt.Println("Got 421: invalid IRC command") // invalid IRC command
@@ -175,18 +151,13 @@ func (c *client) tmiTwitchTvCommandHOSTTARGET(ircData *IRCData) {
 func (c *client) tmiTwitchTvCommandNOTICE(ircData *IRCData) {
 	var noticeMessage, err = parseNoticeMessage(ircData)
 	if err != nil {
+		c.warnUser(err)
 		if noticeMessage.MsgID == "login_failure" {
-			c.notifFatal.Notify()
-			c.callDone(err)
+			c.notifFatal.notify()
 			return
 		}
-		c.warnUser(err)
 	}
-	if h, ok := c.handlers[NOTICE]; ok {
-		if h != nil {
-			h(noticeMessage)
-		}
-	}
+	c.callMessageHandler(NOTICE, noticeMessage)
 }
 func (c *client) tmiTwitchTvCommandRECONNECT(ircData *IRCData) {
 	fmt.Println("Got RECONNECT")
@@ -231,4 +202,12 @@ func (c *client) otherCommandPRIVMSG(ircData *IRCData) {
 }
 func (c *client) otherCommandWHISPER(ircData *IRCData) {
 	fmt.Println("Got WHISPER")
+}
+
+func (c *client) callMessageHandler(mt MessageType, message Message) {
+	if h, ok := c.handlers[mt]; ok {
+		if h != nil {
+			h(message)
+		}
+	}
 }

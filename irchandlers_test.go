@@ -13,7 +13,7 @@ func TestLoginFailure(t *testing.T) {
 	config.Identity.Set("a", "blah")
 
 	client := NewClient(config)
-	client.Done(func(err error) {
+	client.OnDone(func(err error) {
 		if err != nil {
 			fmt.Println(err)
 		} else {

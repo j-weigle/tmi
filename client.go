@@ -1,8 +1,8 @@
 package tmi
 
 import (
-	"fmt"
-	"math/rand"
+	"errors"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -17,14 +17,14 @@ type Client interface {
 	// Disconnect sends a close message to the server and lets the server close the connection.
 	Disconnect()
 
-	// Done sets the callback function for when a client is done to cb (intended for use with fatal errors).
-	Done(cb func(fatal error))
-
 	// Join joins channel.
 	Join(channel string) error
 
 	// On sets the callback function to cb for the MessageType mt.
 	On(mt MessageType, cb func(Message))
+
+	// Done sets the callback function for when a client is done to cb. Useful for running a client in a goroutine.
+	OnDone(cb func(fatal error))
 
 	// OnErr sets the callback function for general error messages to cb.
 	OnErr(cb func(error))
@@ -40,63 +40,33 @@ type Client interface {
 }
 
 type client struct {
-	conn             *websocket.Conn
 	config           *clientConfig
+	conn             *websocket.Conn
 	done             func(error)                   // callback function for fatal errors.
 	handlers         map[MessageType]func(Message) // callback functions for each MessageType.
-	inbound          chan string                   // for sending inbound messages to the handlers, mostly used for a buffer
+	inbound          chan string                   // for sending inbound messages to the handlers, acts as a buffer.
 	notifFatal       notifier                      // notification of fatal error.
 	notifDisconnect  notifier                      // notification of user manual disconnect.
 	notifReconnect   notifier                      // notification of reconnect.
-	notifPingerDone  notifier                      // notification of pinger returning.
 	onError          func(error)                   // callback function for non-fatal errors.
-	outbound         chan string                   // for sending outbound messages to the writer
+	outbound         chan string                   // for sending outbound messages to the writer.
 	rcvdMsg          chan bool                     // when conn reads, notifies ping loop.
 	rcvdPong         chan bool                     // when pong received, notifies ping loop.
-	reconnectCounter int                           // manages keeping track of reconnect attempts before a successful attempt
+	reconnectCounter int                           // for keeping track of reconnect attempts before a successful attempt.
+	wg               *sync.WaitGroup               // for waiting on all goroutines to finish.
 }
 
-type clientConfig struct {
-	Channels   []string          // which channels the client will connect to.
-	Connection *connectionConfig // how the client will connect and reconnect.
-	Identity   *identityConfig   // who the client logs in as.
-	Pinger     *pingConfig       // how often to ping, and timeout.
-}
-
-type connectionConfig struct {
-	reconnect            bool // if true, reconnect on reconnect requests and non-fatal errors.
-	secure               bool // if true, connect to to Twitch's secure server(port 443), otherwise insecure (port 80).
-	maxReconnectAttempts int  // maximum number of attempts to reconnect when disconnected.
-	maxReconnectInterval int  // maximum interval between reconnect attempts.
-}
-
-type identityConfig struct {
-	username string // login account name
-	password string // oauth token
-}
-
-type pingConfig struct {
-	wait    time.Duration // how long to wait before sending a ping when no messages have been received
-	timeout time.Duration // how long to wait on a pong before reconnecting
-}
-
-// notifiers Reset() and Notify() are used in combination to notify multiple goroutines.
+// notifier's reset() and notify() methods are used in combination to notify multiple goroutines to close.
+// call reset() before spawning goroutines
+// call notify() in any goroutines to signal one another by listening to the notifier's channel ch
 type notifier struct {
 	mutex sync.Mutex
 	once  *sync.Once
 	ch    chan struct{}
 }
 
-// Reset sets the notifier to be ready to be used.
-func (n *notifier) Reset() {
-	n.mutex.Lock()
-	n.once = &sync.Once{}
-	n.ch = make(chan struct{})
-	n.mutex.Unlock()
-}
-
-// Notify uses the notifier and makes it unusable until reset.
-func (n *notifier) Notify() {
+// notify uses the notifier and makes it unusable until reset.
+func (n *notifier) notify() {
 	n.mutex.Lock()
 	n.once.Do(func() {
 		close(n.ch)
@@ -104,9 +74,17 @@ func (n *notifier) Notify() {
 	n.mutex.Unlock()
 }
 
+// reset sets the notifier to be ready to be used.
+func (n *notifier) reset() {
+	n.mutex.Lock()
+	n.once = &sync.Once{}
+	n.ch = make(chan struct{})
+	n.mutex.Unlock()
+}
+
 // NewClient returns a new client using the provided config.
 func NewClient(c *clientConfig) Client {
-	var config = c.duplicate()
+	var config = c.deepCopy()
 	var handlers = make(map[MessageType]func(Message))
 	return &client{
 		config:   config,
@@ -117,106 +95,229 @@ func NewClient(c *clientConfig) Client {
 	}
 }
 
-// duplicate returns a deep copy of the calling client config.
-func (c *clientConfig) duplicate() *clientConfig {
-	var config = &clientConfig{}
-	var conn = *c.Connection
-	var id = *c.Identity
-	var chans = make([]string, len(c.Channels))
-	var pinger = *c.Pinger
-	copy(chans, c.Channels)
-	config.Connection = &conn
-	config.Identity = &id
-	config.Channels = chans
-	config.Pinger = &pinger
-	return config
+// disconnect sends a close message to the server and then closes the connection.
+func (c *client) disconnect() {
+	c.conn.WriteMessage(websocket.CloseMessage,
+		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	c.conn.Close()
 }
 
-// NewClientConfig returns a client config with Connection settings initialzed
-// to the recommended defaults. Identity is initialzed but left empty.
-func NewClientConfig() *clientConfig {
-	var conn = &connectionConfig{}
-	conn.Default()
-	var id = &identityConfig{}
-	var pinger = &pingConfig{}
-	pinger.Default()
-	return &clientConfig{
-		Connection: conn,
-		Identity:   id,
-		Pinger:     pinger,
+func (c *client) handleMessage(rawMessage string) {
+	var ircData = parseIRCMessage(rawMessage)
+
+	// TODO: parseRawMessage for each else below, and call the UNSET handler
+	switch ircData.Prefix {
+	case "tmi.twitch.tv":
+		if h, ok := tmiTwitchTvHandlers(ircData.Command); ok {
+			if h != nil {
+				h(c, ircData)
+			}
+		} else {
+			c.warnUser(errors.New("could not handle message with tmi.twitch.tv prefix:\n" + rawMessage))
+		}
+	case "jtv":
+		if h, ok := jtvHandlers(ircData.Command); ok {
+			if h != nil {
+				h(c, ircData)
+			}
+		} else {
+			c.warnUser(errors.New("could not handle message with jtv prefix:\n" + rawMessage))
+		}
+	default:
+		if h, ok := otherHandlers(ircData.Command); ok {
+			if h != nil {
+				h(c, ircData)
+			}
+		} else {
+			c.warnUser(errors.New("could not handle message with { " + ircData.Prefix + " } prefix:\n" + rawMessage))
+		}
 	}
 }
 
-// SetReconnect sets whether the client will attempt to reconnect
-// to the server in the case of a disconnect.
-func (c *connectionConfig) SetReconnect(reconnect bool) {
-	c.reconnect = reconnect
+func (c *client) spawnReader() {
+	c.wg.Add(1)
+	go func() {
+		defer c.notifReconnect.notify()
+		defer c.wg.Done()
+
+		for {
+			_, received, err := c.conn.ReadMessage()
+			if err != nil {
+				return
+			}
+			data := strings.Split(string(received), "\r\n")
+			for _, rawMessage := range data {
+				if len(rawMessage) > 0 {
+					select { // notify pinger to reset its wait timer for received messages, but don't block.
+					case c.rcvdMsg <- true:
+					default:
+					}
+					c.inbound <- rawMessage
+				}
+			}
+		}
+	}()
 }
 
-// SetReconnectSettings sets how often and how many times the client
-// will attempt to reconnect to the server in the case of a disconnect.
-func (c *connectionConfig) SetReconnectSettings(maxAttempts, maxInterval int) {
-	c.maxReconnectAttempts = maxAttempts
-	if maxInterval < 5000 {
-		maxInterval = 5000
+func (c *client) spawnWriter() {
+	c.wg.Add(1)
+	go func() {
+		defer c.wg.Done()
+
+		for {
+			select {
+			case <-c.notifDisconnect.ch:
+				return
+			case <-c.notifFatal.ch:
+				return
+			case <-c.notifReconnect.ch:
+				return
+
+			case message := <-c.outbound:
+				err := c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
+				if err != nil {
+					c.outbound <- message // store for after reconnect
+
+					c.notifReconnect.notify()
+					return
+				}
+			}
+		}
+	}()
+}
+
+func (c *client) readInbound() error {
+	for {
+		select {
+		case rawMessage := <-c.inbound:
+			c.handleMessage(rawMessage)
+
+		case <-c.notifReconnect.ch:
+			return errReconnectNotification
+
+		case <-c.notifDisconnect.ch:
+			return errDisconnectNotification
+
+		case <-c.notifFatal.ch:
+			return errFatalNotification
+		}
 	}
-	c.maxReconnectInterval = maxInterval
 }
 
-// SetSecure sets the connection scheme and port.
-// true uses scheme = wss and port = 443.
-// false uses scheme = ws and port = 80.
-func (c *connectionConfig) SetSecure(secure bool) {
-	c.secure = secure
-}
-
-// Default sets the connection configuration options to their recommended defaults.
-//
-// Default options:
-// reconnect            = true,
-// secure               = true,
-// maxReconnectAttempts = -1 (infinite),
-// maxReconnectInterval = 30000 milliseconds,
-func (c *connectionConfig) Default() {
-	c.reconnect = true
-	c.secure = true
-	c.maxReconnectAttempts = -1
-	c.maxReconnectInterval = 30000
-}
-
-// Set sets the login identity configuration to username and password with oauth: prepended.
-func (id *identityConfig) Set(username, password string) {
-	id.SetUsername(username)
-	id.SetPassword(password)
-}
-
-// SetPassword sets the password for the identity configuration to password with oauth: prepended.
-func (id *identityConfig) SetPassword(password string) {
-	if !strings.HasPrefix(password, "oauth:") {
-		password = "oauth:" + password
+func (c *client) send(message string) error {
+	select {
+	case c.outbound <- message:
+		return nil
+	default:
+		return errors.New("message not delivered to outbound channel")
 	}
-	id.password = password
 }
 
-// Anonymous sets username to an random justinfan username (password can be anything).
-func (id *identityConfig) Anonymous() {
-	id.username = "justinfan" + fmt.Sprint(rand.Intn(79000)+1000)
-	id.password = "swordfish"
+func (c *client) sendConnectSequence() (err error) {
+	var message string
+	message = "PASS " + c.config.Identity.password
+	err = c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
+	if err != nil {
+		return
+	}
+	message = "NICK " + c.config.Identity.username
+	err = c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
+	if err != nil {
+		return
+	}
+	message = "CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"
+	err = c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
+	return
 }
 
-// SetUsername sets the username for the identity configuration to username.
-func (id *identityConfig) SetUsername(username string) {
-	id.username = strings.ToLower(username)
+func (c *client) warnUser(err error) {
+	if c.onError != nil {
+		c.onError(err)
+	}
 }
 
-// Set sets the idle wait time and timeout for ping configuration p.
-func (p *pingConfig) Set(wait, timeout time.Duration) {
-	p.wait = wait
-	p.timeout = timeout
+func (c *client) callDone(err error) {
+	if c.done != nil {
+		c.done(err)
+	}
 }
 
-// Default sets the ping configuration options to their recommended defaults.
-func (p *pingConfig) Default() {
-	p.wait = time.Minute
-	p.timeout = time.Second * 5
+func (c *client) connect(u url.URL) error {
+	var err error
+	// Make sure the connection is not already open before connecting.
+	if c.conn != nil {
+		c.disconnect()
+	}
+
+	// Establish a connection to the URL defined by u.
+	if c.conn, _, err = websocket.DefaultDialer.Dial(u.String(), nil); err != nil {
+		return err
+	}
+
+	//TODO: possibly replace notifiers with context
+	// Reset the notifiers for disconnects, fatal errors, and reconnects.
+	c.notifDisconnect.reset()
+	c.notifFatal.reset()
+	c.notifReconnect.reset()
+
+	// Reset client's WaitGroup wg.
+	c.wg = &sync.WaitGroup{}
+
+	// Begin reading from c.conn.
+	c.spawnReader()
+
+	// Send NICK, PASS, and CAP REQ.
+	// Sends in this goroutine before starting writer to prevent write conflicts.
+	c.sendConnectSequence()
+
+	// Begin writing to c.conn.
+	c.spawnWriter()
+
+	// TODO: c.Join(c.config.Channels)
+
+	err = c.readInbound()
+	c.notifReconnect.notify()
+
+	// make sure reader, writer, and pinger have finished
+	c.wg.Wait()
+
+	c.disconnect()
+
+	return err
+}
+
+func (c *client) spawnPinger() {
+	// recreate each time so that there isn't a pong sitting in the channel on reconnects
+	c.rcvdPong = make(chan bool, 1)
+
+	c.wg.Add(1)
+	go func() {
+		defer c.wg.Done()
+
+		for {
+			select {
+			case <-c.notifFatal.ch:
+				return
+			case <-c.notifReconnect.ch:
+				return
+			case <-c.notifDisconnect.ch:
+				return
+
+			case <-c.rcvdMsg:
+				continue
+
+			case <-time.After(c.config.Pinger.wait):
+				c.send("PING :tmi.twitch.tv")
+
+				select {
+				case <-c.rcvdPong:
+					continue
+
+				case <-time.After(c.config.Pinger.timeout):
+					c.notifReconnect.notify()
+					return
+				}
+			}
+		}
+	}()
 }

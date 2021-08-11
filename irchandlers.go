@@ -119,8 +119,6 @@ func (c *client) tmiTwitchTvCommand001(ircData *IRCData) {
 	// successful connection, reset the reconnect counter
 	c.reconnectCounter = 0
 
-	c.spawnPinger()
-
 	var welcomeMessage = &WelcomeMessage{
 		IRCType: ircData.Command,
 		Data:    ircData,
@@ -128,13 +126,6 @@ func (c *client) tmiTwitchTvCommand001(ircData *IRCData) {
 	}
 
 	c.callMessageHandler(WELCOME, welcomeMessage)
-	// TODO: for each handler, although probably not this one...
-	// if err == nil {
-	// 	c.callMessageHandler(WELCOME, welcomeMessage)
-	// } else {
-	// 	c.callMessageHandler(WELCOME, unsetMessage)
-	// 	c.callMessageHandler(UNSET, unsetMessage)
-	// }
 }
 func (c *client) tmiTwitchTvCommand421(ircData *IRCData) {
 	fmt.Println("Got 421: invalid IRC command") // invalid IRC command
@@ -153,8 +144,7 @@ func (c *client) tmiTwitchTvCommandNOTICE(ircData *IRCData) {
 	if err != nil {
 		c.warnUser(err)
 		if noticeMessage.MsgID == "login_failure" {
-			c.notifFatal.notify()
-			return
+			c.closeErrCb(ErrLoginFailure)
 		}
 	}
 	c.callMessageHandler(NOTICE, noticeMessage)

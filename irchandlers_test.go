@@ -21,8 +21,20 @@ func TestLoginFailure(t *testing.T) {
 		}
 	})
 
+	client.On(NOTICE, func(m Message) {
+		var message, ok = m.(*NoticeMessage)
+		if !ok {
+			t.Errorf("Could not convert notice message to *NoticeMessage")
+		}
+		if message != nil {
+			fmt.Println(message)
+		} else {
+			fmt.Println("message was nil")
+		}
+	})
+
 	err := client.Connect()
-	if err != errFatalNotification {
+	if err != ErrLoginFailure {
 		t.Errorf("err type should have been fatal")
 	}
 }

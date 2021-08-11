@@ -14,12 +14,12 @@ const (
 )
 
 var (
-	errReconnectNotification  = errors.New("reconnect")
-	errDisconnectNotification = errors.New("disconnect")
-	errFatalNotification      = errors.New("fatal")
+	errReconnect        = errors.New("reconnect")
+	ErrDisconnectCalled = errors.New("client Disconnect() was called")
+	ErrLoginFailure     = errors.New("login failure")
 )
 
-// Connect
+// Connect connects to irc-ws.chat.twitch.tv and attempts to reconnect on connection errors.
 func (c *client) Connect() error {
 	var err error
 	var u url.URL
@@ -33,12 +33,15 @@ func (c *client) Connect() error {
 	var maxReconnectAttempts = c.config.Connection.maxReconnectAttempts
 	var maxReconnectInterval = time.Duration(c.config.Connection.maxReconnectInterval)
 
+	// Reset disconnect before starting connection loop. connect() will check if it has
+	// been used before attempting to (re)connect.
+	c.notifDisconnect.reset()
+
 	for {
 		err = c.connect(u)
 
 		switch err {
-		case errReconnectNotification:
-			var sleepDuration time.Duration
+		case errReconnect:
 			var overflowPoint = 64 // technically 63, but using i - 1
 
 			if maxReconnectAttempts == 0 {
@@ -60,6 +63,7 @@ func (c *client) Connect() error {
 				return err
 			}
 
+			var sleepDuration time.Duration
 			if i == 0 {
 				sleepDuration = 0
 			} else if i > 0 && i < overflowPoint {
@@ -75,17 +79,19 @@ func (c *client) Connect() error {
 
 			time.Sleep(sleepDuration)
 			continue
-		case errFatalNotification:
-			c.callDone(err)
 		default:
+			c.callDone(err)
 			return err
 		}
 	}
 }
 
-// Disconnect closes the connection to the server, and does not attempt to reconnect
+// Disconnect closes the connection to the server, and does not attempt to reconnect.
 func (c *client) Disconnect() {
-	c.notifDisconnect.notify() // let all relevant goroutines know the user called Disconnect
+	c.notifDisconnect.notify()
+	if c.closeErrCb != nil {
+		c.closeErrCb(ErrDisconnectCalled)
+	}
 }
 
 // Join joins channel.
@@ -121,7 +127,7 @@ func (c *client) On(mt MessageType, cb func(Message)) {
 	c.handlers[mt] = cb
 }
 
-// OnDone sets the callback function to be called when a client is done (typically due to a fatal error).
+// Done sets the callback function for when a client is done to cb. Useful for running a client in a goroutine.
 func (c *client) OnDone(cb func(fatal error)) {
 	c.done = cb
 }

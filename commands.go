@@ -89,9 +89,6 @@ func (c *client) Connect() error {
 // Disconnect closes the connection to the server, and does not attempt to reconnect.
 func (c *client) Disconnect() {
 	c.notifDisconnect.notify()
-	if c.closeErrCb != nil {
-		c.closeErrCb(ErrDisconnectCalled)
-	}
 }
 
 // Join joins channel.

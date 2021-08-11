@@ -140,11 +140,6 @@ func (c *client) connect(u url.URL) error {
 	default:
 	}
 
-	// Make sure the connection is not already open before connecting.
-	if c.conn != nil {
-		c.disconnect()
-	}
-
 	// Establish a connection to the URL defined by u.
 	if c.conn, _, err = websocket.DefaultDialer.Dial(u.String(), nil); err != nil {
 		return err

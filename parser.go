@@ -70,10 +70,10 @@ func parseNoticeMessage(ircData *IRCData) (*NoticeMessage, error) {
 		// Emote only mode on/off
 		case "emote_only_off":
 			noticeMessage.Notice = "emoteonly"
-			noticeMessage.On = false
+			noticeMessage.Enabled = false
 		case "emote_only_on":
 			noticeMessage.Notice = "emoteonly"
-			noticeMessage.On = true
+			noticeMessage.Enabled = true
 
 		// Moderators of the channel, or none
 		case "no_mods":
@@ -92,18 +92,18 @@ func parseNoticeMessage(ircData *IRCData) (*NoticeMessage, error) {
 		// r9k (uniquechat) mode on/off
 		case "r9k_off":
 			noticeMessage.Notice = "uniquechat"
-			noticeMessage.On = false
+			noticeMessage.Enabled = false
 		case "r9k_on":
 			noticeMessage.Notice = "uniquechat"
-			noticeMessage.On = true
+			noticeMessage.Enabled = true
 
 		// Subscribers only mode on/off
 		case "subs_off":
 			noticeMessage.Notice = "subonly"
-			noticeMessage.On = false
+			noticeMessage.Enabled = false
 		case "subs_on":
 			noticeMessage.Notice = "subonly"
-			noticeMessage.On = true
+			noticeMessage.Enabled = true
 
 		// VIPs of the channel, or none
 		case "no_vips":

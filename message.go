@@ -5,7 +5,9 @@ import "time"
 type MessageType int
 
 const (
+	// Uknown, unrecognized, or non-handled message types
 	UNSET MessageType = iota - 1
+	// tmi.twitch.tv prefixed message types
 	WELCOME
 	INVALIDIRC
 	CLEARCHAT
@@ -17,6 +19,7 @@ const (
 	ROOMSTATE
 	USERNOTICE
 	USERSTATE
+	// non tmi.twitch.tv prefixed message types
 	NAMES
 	JOIN
 	PART
@@ -27,7 +30,7 @@ const (
 )
 
 func (mt MessageType) String() string {
-	if mt < 0 {
+	if mt == -1 {
 		return "UNSET"
 	}
 	return []string{
@@ -64,16 +67,23 @@ type IRCData struct {
 	Params  []string          `json:"params"`
 }
 
+type UnsetMessage struct {
+	Data    *IRCData
+	IRCType string
+	Text    string
+	Type    MessageType
+}
+
 // Initial welcome message after successfully loggging in
 type WelcomeMessage struct {
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 }
 
 type InvalidIRCMessage struct {
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"` // "Unknown command"
 	Type    MessageType `json:"type"`
 
@@ -84,8 +94,8 @@ type InvalidIRCMessage struct {
 // Timeout, ban, or clear all chat
 type ClearChatMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"` // a sentence explaining what the clear chat did
 	Type    MessageType `json:"type"`
 
@@ -96,8 +106,8 @@ type ClearChatMessage struct {
 // Singular message deletion
 type ClearMsgMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"` // the deleted message
 	Type    MessageType `json:"type"`
 
@@ -107,8 +117,8 @@ type ClearMsgMessage struct {
 
 // Information about user that successfully logged in
 type GlobalUserstateMessage struct {
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
 	EmoteSets []string `json:"emote-sets"` // emotes belonging to one or more emote sets
@@ -117,8 +127,8 @@ type GlobalUserstateMessage struct {
 
 type HostTargetMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"` // "<channel> began hosting <hosted>" or "<channel> exited host mode"
 	Type    MessageType `json:"type"`
 
@@ -128,8 +138,8 @@ type HostTargetMessage struct {
 
 type NoticeMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
@@ -141,15 +151,15 @@ type NoticeMessage struct {
 }
 
 type ReconnectMessage struct {
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 }
 
 type RoomstateMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
 	States []RoomState `json:"states"`  // the states in the roomstate tags
@@ -164,8 +174,8 @@ type RoomState struct { // note followers-only: -1 (disabled), 0 (enabled immedi
 
 type UsernoticeMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
@@ -176,8 +186,8 @@ type UsernoticeMessage struct {
 
 type UserstateMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
 	EmoteSets []string `json:"emote-sets"` // emotes belonging to one or more emote sets
@@ -186,8 +196,8 @@ type UserstateMessage struct {
 
 type NamesMessage struct { // warning: technically deprecated, but not quite removed yet
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
 	Users []string `json:"users"` // list of usernames
@@ -195,8 +205,8 @@ type NamesMessage struct { // warning: technically deprecated, but not quite rem
 
 type JoinMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
 	Username string `json:"username"` // name of joined account
@@ -204,31 +214,31 @@ type JoinMessage struct {
 
 type PartMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
 	Username string `json:"username"` // name of parted account
 }
 
 type PingMessage struct {
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 }
 
 type PongMessage struct {
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 }
 
 type PrivmsgMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
@@ -238,8 +248,8 @@ type PrivmsgMessage struct {
 
 type WhisperMessage struct {
 	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
+	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
@@ -287,6 +297,9 @@ type User struct {
 	EmotesRaw    string   `json:"emotesraw"`
 }
 
+func (msg *UnsetMessage) GetType() MessageType {
+	return msg.Type
+}
 func (msg *WelcomeMessage) GetType() MessageType {
 	return msg.Type
 }

@@ -14,7 +14,7 @@ func TestLoginFailure(t *testing.T) {
 
 	client := NewClient(config)
 	client.OnDone(func(err error) {
-		if err != nil {
+		if err != ErrLoginFailure {
 			fmt.Println(err)
 		} else {
 			t.Errorf("client was supposed to error on login authentication")
@@ -27,14 +27,14 @@ func TestLoginFailure(t *testing.T) {
 			t.Errorf("Could not convert notice message to *NoticeMessage")
 		}
 		if message != nil {
-			fmt.Println(message)
+			fmt.Println(message.Text)
 		} else {
-			fmt.Println("message was nil")
+			fmt.Println("notice message was nil")
 		}
 	})
 
 	err := client.Connect()
 	if err != ErrLoginFailure {
-		t.Errorf("err type should have been fatal")
+		t.Errorf("client was supposed to error on login authentication")
 	}
 }

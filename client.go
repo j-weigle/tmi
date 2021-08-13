@@ -43,8 +43,6 @@ type Client interface {
 type client struct {
 	config           *clientConfig
 	conn             *websocket.Conn
-	closeErr         connCloseErr
-	closeErrCb       func(error)                   // internal callback for goroutines on connection events.
 	done             func(error)                   // callback function for fatal errors.
 	handlers         map[MessageType]func(Message) // callback functions for each MessageType.
 	inbound          chan string                   // for sending inbound messages to the handlers, acts as a buffer.
@@ -72,18 +70,6 @@ func (t *connCloseErr) update(err error) {
 		}
 	}
 	t.mutex.Unlock()
-}
-
-func (t *connCloseErr) reset() {
-	t.mutex.Lock()
-	t.err = nil
-	t.mutex.Unlock()
-}
-
-func (t *connCloseErr) get() error {
-	t.mutex.Lock()
-	defer t.mutex.Unlock()
-	return t.err
 }
 
 // notifier's reset() and notify() methods are used in combination to notify multiple goroutines to close.
@@ -132,6 +118,16 @@ func (c *client) callDone(err error) {
 	}
 }
 
+func (c *client) callMessageHandler(mt MessageType, message Message) {
+	if h, ok := c.handlers[mt]; ok {
+		if h != nil {
+			h(message)
+		} else {
+			c.warnUser(errors.New("message handler for type " + mt.String() + "was set, but value was nil"))
+		}
+	}
+}
+
 func (c *client) connect(u url.URL) error {
 	var err error
 	select { // Check disconnect has not been called before bothering to reconnect.
@@ -149,31 +145,31 @@ func (c *client) connect(u url.URL) error {
 	var wg = &sync.WaitGroup{}
 	var ctx, cancelFunc = context.WithCancel(context.Background())
 
-	c.closeErr.reset()
+	var closeErr = &connCloseErr{}
 	// Let goroutines have a callback to signal one another to return using context's CancelFunc.
-	c.closeErrCb = func(err error) {
+	var closeErrCb = func(errReason error) {
 		cancelFunc()
-		c.closeErr.update(err)
+		closeErr.update(errReason)
 	}
 
 	// Begin reading from c.conn in separate goroutine.
-	c.spawnReader(ctx, wg)
+	c.spawnReader(ctx, wg, closeErrCb)
 
 	// Send NICK, PASS, and CAP REQ.
 	// Sends in this goroutine before starting writer to prevent write conflicts.
 	c.sendConnectSequence()
 
 	// Begin writing to c.conn in separate goroutine.
-	c.spawnWriter(ctx, wg)
+	c.spawnWriter(ctx, wg, closeErrCb)
 
 	// Start the pinger in a separate goroutine.
 	// It will ping c.conn after it hasn't received a message for c.config.Pinger.wait.
-	c.spawnPinger(ctx, wg)
+	c.spawnPinger(ctx, wg, closeErrCb)
 
 	// TODO: c.Join(c.config.Channels)
 
 	// Block and wait for a Disconnect() call or a connection error.
-	c.readInbound(ctx)
+	c.readInbound(ctx, closeErrCb)
 
 	// Make sure reader, writer, and pinger have finished.
 	wg.Wait()
@@ -181,9 +177,7 @@ func (c *client) connect(u url.URL) error {
 	// Double check connection was closed.
 	c.disconnect()
 
-	err = c.closeErr.get()
-
-	return err
+	return closeErr.err
 }
 
 // disconnect sends a close message to the server and then closes the connection.
@@ -193,48 +187,62 @@ func (c *client) disconnect() {
 	c.conn.Close()
 }
 
-func (c *client) handleMessage(rawMessage string) {
+func (c *client) handleMessage(rawMessage string) error {
 	var ircData = parseIRCMessage(rawMessage)
+	var parseUnset = func() error {
+		var unsetMessage, err = parseUnsetMessage(ircData)
+		if err != nil {
+			c.warnUser(err)
+		}
+		c.callMessageHandler(UNSET, unsetMessage)
+		return nil
+	}
 
-	// TODO: parseRawMessage for each else below, and call the UNSET handler
 	switch ircData.Prefix {
 	case "tmi.twitch.tv":
 		if h, ok := tmiTwitchTvHandlers(ircData.Command); ok {
 			if h != nil {
-				h(c, ircData)
+				return h(c, ircData)
 			}
 		} else {
-			c.warnUser(errors.New("could not handle message with tmi.twitch.tv prefix:\n" + rawMessage))
+			c.warnUser(errors.New("unrecognized message with tmi.twitch.tv prefix:\n" + rawMessage))
+			return parseUnset()
 		}
 	case "jtv":
 		if h, ok := jtvHandlers(ircData.Command); ok {
 			if h != nil {
-				h(c, ircData)
+				return h(c, ircData)
 			}
 		} else {
-			c.warnUser(errors.New("could not handle message with jtv prefix:\n" + rawMessage))
+			c.warnUser(errors.New("unrecognized message with jtv prefix:\n" + rawMessage))
+			return parseUnset()
 		}
 	default:
 		if h, ok := otherHandlers(ircData.Command); ok {
 			if h != nil {
-				h(c, ircData)
+				return h(c, ircData)
 			}
 		} else {
-			c.warnUser(errors.New("could not handle message with { " + ircData.Prefix + " } prefix:\n" + rawMessage))
+			c.warnUser(errors.New("unrecognized message with { " + ircData.Prefix + " } prefix:\n" + rawMessage))
 		}
 	}
+
+	return parseUnset()
 }
 
-func (c *client) readInbound(ctx context.Context) {
+func (c *client) readInbound(ctx context.Context, closeErrCb func(error)) {
 	for {
 		select {
 		case <-c.notifDisconnect.ch:
-			c.closeErrCb(ErrDisconnectCalled)
+			closeErrCb(ErrDisconnectCalled)
 			return
 		case <-ctx.Done():
 			return
 		case rawMessage := <-c.inbound:
-			c.handleMessage(rawMessage)
+			if err := c.handleMessage(rawMessage); err != nil {
+				closeErrCb(err)
+				return
+			}
 		}
 	}
 }
@@ -265,7 +273,7 @@ func (c *client) sendConnectSequence() (err error) {
 	return
 }
 
-func (c *client) spawnPinger(ctx context.Context, wg *sync.WaitGroup) {
+func (c *client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
 	// recreate each time so that there isn't a pong sitting in the channel on reconnects
 	c.rcvdPong = make(chan bool, 1)
 
@@ -289,7 +297,7 @@ func (c *client) spawnPinger(ctx context.Context, wg *sync.WaitGroup) {
 					continue
 
 				case <-time.After(c.config.Pinger.timeout):
-					c.closeErrCb(errReconnect)
+					closeErrCb(errReconnect)
 					return
 				}
 			}
@@ -297,7 +305,7 @@ func (c *client) spawnPinger(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-func (c *client) spawnReader(ctx context.Context, wg *sync.WaitGroup) {
+func (c *client) spawnReader(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -310,7 +318,7 @@ func (c *client) spawnReader(ctx context.Context, wg *sync.WaitGroup) {
 			}
 			_, received, err := c.conn.ReadMessage()
 			if err != nil {
-				c.closeErrCb(errReconnect)
+				closeErrCb(errReconnect)
 				return
 			}
 			data := strings.Split(string(received), "\r\n")
@@ -327,7 +335,7 @@ func (c *client) spawnReader(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-func (c *client) spawnWriter(ctx context.Context, wg *sync.WaitGroup) {
+func (c *client) spawnWriter(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -343,7 +351,7 @@ func (c *client) spawnWriter(ctx context.Context, wg *sync.WaitGroup) {
 				if errWriting != nil {
 					c.outbound <- message // store for after reconnect
 
-					c.closeErrCb(errReconnect)
+					closeErrCb(errReconnect)
 					return
 				}
 			}

@@ -182,6 +182,11 @@ func parseParams(rawParams []string) []string {
 	return params
 }
 
+// TODO:
+func parseUnsetMessage(ircData *IRCData) (*UnsetMessage, error) {
+	return &UnsetMessage{}, errors.New("parseUnsetMessage not implemented yet")
+}
+
 func parseTags(rawTags string) map[string]string {
 	tags := make(map[string]string)
 

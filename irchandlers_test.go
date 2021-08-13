@@ -15,9 +15,9 @@ func TestLoginFailure(t *testing.T) {
 	client := NewClient(config)
 	client.OnDone(func(err error) {
 		if err != ErrLoginFailure {
-			fmt.Println(err)
-		} else {
 			t.Errorf("client was supposed to error on login authentication")
+		} else {
+			fmt.Println(err)
 		}
 	})
 

@@ -17,7 +17,6 @@ const (
 	ROOMSTATE
 	USERNOTICE
 	USERSTATE
-	MODE
 	NAMES
 	JOIN
 	PART
@@ -43,7 +42,6 @@ func (mt MessageType) String() string {
 		"ROOMSTATE",
 		"USERNOTICE",
 		"USERSTATE",
-		"MODE",
 		"NAMES",
 		"JOIN",
 		"PART",
@@ -79,8 +77,8 @@ type InvalidIRCMessage struct {
 	Text    string      `json:"text"` // "Unknown command"
 	Type    MessageType `json:"type"`
 
-	User    string `json:"user"`   // the user who issued the command
 	Unknown string `json:"uknown"` // the command that was used
+	User    string `json:"user"`   // the user who issued the command
 }
 
 // Timeout, ban, or clear all chat
@@ -113,8 +111,8 @@ type GlobalUserstateMessage struct {
 	Data    *IRCData    `json:"data"`
 	Type    MessageType `json:"type"`
 
-	User      *User    `json:"user"`       // information about the user that logged in
 	EmoteSets []string `json:"emote-sets"` // emotes belonging to one or more emote sets
+	User      *User    `json:"user"`       // information about the user that logged in
 }
 
 type HostTargetMessage struct {
@@ -135,10 +133,10 @@ type NoticeMessage struct {
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
+	Enabled bool     `json:"enabled"` // set when Notice is one of: emoteonly, uniquechat, subonly
 	Mods    []string `json:"mods"`    // list of mods for Channel when Notice is set to mods
 	MsgID   string   `json:"msg-id"`  // msg-id value from Data.Tags, or parse-error / login-error if the key doesn't exist
 	Notice  string   `json:"notice"`  // Notice is one of: automod, emoteonly, mods, uniquechat, subonly, vips, notice (notice is the default)
-	Enabled bool     `json:"enabled"` // set when Notice is one of: emoteonly, uniquechat, subonly
 	VIPs    []string `json:"vips"`    // list of vips for Channel when Notice is set to vips
 }
 
@@ -170,52 +168,47 @@ type UsernoticeMessage struct {
 	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	// TODO:
+
+	MsgParams map[string]string `json:"msg-params"` // any msg-param tags for the notice
+	SystemMsg string            `json:"system-msg"` // message printed in chat on the notice
+	User      *User             `json:"user"`       // user who caused the notice
 }
 
 type UserstateMessage struct {
 	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
-	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	// TODO:
+
+	EmoteSets []string `json:"emote-sets"` // emotes belonging to one or more emote sets
+	User      *User    `json:"user"`       // user that joined or sent a privmsg
 }
 
-type ModeMessage struct {
+type NamesMessage struct { // warning: technically deprecated, but not quite removed yet
 	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
-	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	// TODO:
-}
 
-type NamesMessage struct {
-	Channel string      `json:"channel"`
-	IRCType string      `json:"irc-type"`
-	Data    *IRCData    `json:"data"`
-	Text    string      `json:"text"`
-	Type    MessageType `json:"type"`
-	// TODO:
+	Users []string `json:"users"` // list of usernames
 }
 
 type JoinMessage struct {
 	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
-	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	// TODO:
+
+	Username string `json:"username"` // name of joined account
 }
 
 type PartMessage struct {
 	Channel string      `json:"channel"`
 	IRCType string      `json:"irc-type"`
 	Data    *IRCData    `json:"data"`
-	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	// TODO:
+
+	Username string `json:"username"` // name of parted account
 }
 
 type PingMessage struct {
@@ -239,9 +232,8 @@ type PrivmsgMessage struct {
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
-	// TODO:
-	Action bool  `json:"action"`
-	User   *User `json:"user"`
+	Action bool  `json:"action"` // indicates if the /me command was used
+	User   *User `json:"user"`   // user that sent the message
 }
 
 type WhisperMessage struct {
@@ -250,7 +242,10 @@ type WhisperMessage struct {
 	Data    *IRCData    `json:"data"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
-	// TODO:
+
+	Action bool   `json:"action"` // indicates if the /me command was used
+	Target string `json:"target"` // message recipient
+	User   *User  `json:"user"`   // message sender
 }
 
 type Badge struct {
@@ -323,9 +318,6 @@ func (msg *UsernoticeMessage) GetType() MessageType {
 	return msg.Type
 }
 func (msg *UserstateMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *ModeMessage) GetType() MessageType {
 	return msg.Type
 }
 func (msg *NamesMessage) GetType() MessageType {

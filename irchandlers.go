@@ -64,8 +64,9 @@ func jtvHandlers(cmd string) (func(*client, *IRCData), bool) {
 	// nil
 
 	// IMPLEMENTED
-	case "MODE":
-		f = (*client).jtvCommandMODE
+	// nil
+	// case "MODE": // deprecated
+	// 	f = (*client).jtvCommandMODE
 
 	// NOT HANDLED
 	default:
@@ -163,10 +164,6 @@ func (c *client) tmiTwitchTvCommandUSERSTATE(ircData *IRCData) {
 }
 func (c *client) tmiTwitchTvCommandGLOBALUSERSTATE(ircData *IRCData) {
 	fmt.Println("Got GLOBALUSERSTATE")
-}
-
-func (c *client) jtvCommandMODE(ircData *IRCData) {
-	fmt.Println("Got MODE")
 }
 
 func (c *client) otherCommand353(ircData *IRCData) {

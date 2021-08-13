@@ -49,8 +49,8 @@ type client struct {
 	notifDisconnect  notifier                      // used for disconnect call notifications
 	onError          func(error)                   // callback function for non-fatal errors.
 	outbound         chan string                   // for sending outbound messages to the writer.
-	rcvdMsg          chan bool                     // when conn reads, notifies ping loop.
-	rcvdPong         chan bool                     // when pong received, notifies ping loop.
+	rcvdMsg          chan struct{}                 // when conn reads, notifies ping loop.
+	rcvdPong         chan struct{}                 // when pong received, notifies ping loop.
 	reconnectCounter int                           // for keeping track of reconnect attempts before a successful attempt.
 }
 
@@ -108,7 +108,7 @@ func NewClient(c *clientConfig) Client {
 		handlers: make(map[MessageType]func(Message)),
 		inbound:  make(chan string, 512),
 		outbound: make(chan string, 512),
-		rcvdMsg:  make(chan bool),
+		rcvdMsg:  make(chan struct{}),
 	}
 }
 
@@ -275,7 +275,7 @@ func (c *client) sendConnectSequence() (err error) {
 
 func (c *client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
 	// recreate each time so that there isn't a pong sitting in the channel on reconnects
-	c.rcvdPong = make(chan bool, 1)
+	c.rcvdPong = make(chan struct{}, 1)
 
 	wg.Add(1)
 	go func() {
@@ -325,7 +325,7 @@ func (c *client) spawnReader(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 			for _, rawMessage := range data {
 				if len(rawMessage) > 0 {
 					select { // notify pinger to reset its wait timer for received messages, if it's listening
-					case c.rcvdMsg <- true:
+					case c.rcvdMsg <- struct{}{}:
 					default:
 					}
 					c.inbound <- rawMessage

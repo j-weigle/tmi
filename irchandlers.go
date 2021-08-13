@@ -195,7 +195,7 @@ func (c *client) otherCommandPING(ircData *IRCData) error {
 }
 func (c *client) otherCommandPONG(ircData *IRCData) error {
 	select {
-	case c.rcvdPong <- true:
+	case c.rcvdPong <- struct{}{}:
 	default:
 	}
 	return nil

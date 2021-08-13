@@ -347,8 +347,8 @@ func (c *client) spawnWriter(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 				return
 
 			case message := <-c.outbound:
-				errWriting := c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
-				if errWriting != nil {
+				err := c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
+				if err != nil {
 					c.outbound <- message // store for after reconnect
 
 					closeErrCb(errReconnect)

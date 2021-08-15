@@ -188,7 +188,7 @@ func (c *client) disconnect() {
 }
 
 func (c *client) handleMessage(rawMessage string) error {
-	var ircData = parseIRCMessage(rawMessage)
+	var ircData, errParseIRC = parseIRCMessage(rawMessage)
 	var parseUnset = func() error {
 		var unsetMessage, err = parseUnsetMessage(ircData)
 		if err != nil {
@@ -196,6 +196,9 @@ func (c *client) handleMessage(rawMessage string) error {
 		}
 		c.callMessageHandler(UNSET, unsetMessage)
 		return nil
+	}
+	if errParseIRC != nil {
+		return parseUnset()
 	}
 
 	switch ircData.Prefix {

@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// NOTICE message handler
 func TestLoginFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip:TestLoginFailure, reason:short mode")
@@ -29,12 +30,55 @@ func TestLoginFailure(t *testing.T) {
 		if message != nil {
 			fmt.Println(message.Text)
 		} else {
-			fmt.Println("notice message was nil")
+			t.Errorf("notice message was nil")
 		}
 	})
 
 	err := client.Connect()
 	if err != ErrLoginFailure {
 		t.Errorf("client was supposed to error on login authentication")
+	}
+}
+
+// 421(INVALIDIRC) message handler
+func TestTmiTwitchTvCommand421(t *testing.T) {
+	var ircType = "421"
+	var username = "ausername"
+	var unknown = "WHO"
+	var text = "Unknown command"
+
+	var testMessage = fmt.Sprintf(":tmi.twitch.tv %v %v %v :%v", ircType, username, unknown, text)
+
+	var want = &InvalidIRCMessage{
+		IRCType: ircType,
+		Text:    text,
+		Type:    INVALIDIRC,
+		Unknown: unknown,
+		User:    username,
+	}
+
+	config := NewClientConfig()
+	c := NewClient(config)
+	c.On(INVALIDIRC, func(m Message) {
+		var message, ok = m.(*InvalidIRCMessage)
+		if !ok {
+			t.Errorf("Could not convert notice message to *InvalidIRCMessage")
+		}
+		if message != nil {
+			message.Data = nil
+			if *want != *message {
+				t.Errorf("want: %+v, got : %+v", want, message)
+			}
+		} else {
+			t.Errorf("421 message was nil")
+		}
+	})
+
+	var client = c.(*client) // convert Client interface to *client struct
+
+	var ircData, _ = parseIRCMessage(testMessage)
+	var err = client.tmiTwitchTvCommand421(ircData)
+	if err != nil {
+		t.Error(err)
 	}
 }

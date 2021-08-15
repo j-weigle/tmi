@@ -120,8 +120,8 @@ func (c *client) tmiTwitchTvCommand001(ircData *IRCData) error {
 	c.reconnectCounter = 0
 
 	var welcomeMessage = &WelcomeMessage{
-		IRCType: ircData.Command,
 		Data:    ircData,
+		IRCType: ircData.Command,
 		Type:    WELCOME,
 	}
 
@@ -129,7 +129,12 @@ func (c *client) tmiTwitchTvCommand001(ircData *IRCData) error {
 	return nil
 }
 func (c *client) tmiTwitchTvCommand421(ircData *IRCData) error {
-	fmt.Println("Got 421: invalid IRC command") // invalid IRC command
+	var invalidIRCMessage, parseErr = parseInvalidIRCMessage(ircData)
+	if parseErr != nil {
+		c.warnUser(parseErr)
+	}
+
+	c.callMessageHandler(INVALIDIRC, invalidIRCMessage)
 	return nil
 }
 func (c *client) tmiTwitchTvCommandCLEARCHAT(ircData *IRCData) error {

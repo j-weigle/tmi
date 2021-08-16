@@ -7,7 +7,7 @@ import (
 type MessageType int
 
 const (
-	// Uknown, unrecognized, or non-handled message types
+	// Unknown, unrecognized, or non-handled message types
 	UNSET MessageType = iota - 1
 	// tmi.twitch.tv prefixed message types
 	WELCOME

@@ -5,6 +5,28 @@ import (
 	"strings"
 )
 
+func (tags IRCTags) EscapeIRCTagValues() {
+	var ircTagEscapes = []struct {
+		from string
+		to   string
+	}{
+		{`\s`, ` `},
+		{`\n`, ``},
+		{`\r`, ``},
+		{`\:`, `;`},
+		{`\\`, `\`},
+	}
+	for k, v := range tags {
+		for _, escape := range ircTagEscapes {
+			v = strings.ReplaceAll(v, escape.from, escape.to)
+		}
+		v = strings.TrimSuffix(v, "\\")
+		v = strings.TrimSpace(v)
+		tags[k] = v
+	}
+
+}
+
 func parseIRCMessage(message string) (*IRCData, error) {
 	ircData := &IRCData{
 		Raw:    message,
@@ -42,21 +64,28 @@ func parseIRCMessage(message string) (*IRCData, error) {
 		return ircData, nil
 	}
 
+	var msgOffset = -1
 	for i, v := range fields[idx:] {
 		if strings.HasPrefix(v, ":") {
-			v = strings.Join(fields[idx+i:], " ")
-			v = strings.TrimPrefix(v, ":")
-			ircData.Params = append(ircData.Params, v)
+			msgOffset = i
 			break
 		}
-		ircData.Params = append(ircData.Params, v)
+	}
+	if msgOffset >= 0 {
+		ircData.Params = fields[idx : idx+msgOffset]
+		var msgSlice = fields[idx+msgOffset:]
+		msgSlice[0] = strings.TrimPrefix(msgSlice[0], ":")
+		var message = strings.Join(msgSlice, " ")
+		ircData.Params = append(ircData.Params, message)
+	} else {
+		ircData.Params = fields[idx:]
 	}
 
 	return ircData, nil
 }
 
 func parseTags(rawTags string) map[string]string {
-	tags := make(map[string]string)
+	var tags IRCTags = make(map[string]string)
 
 	rawTags = strings.TrimPrefix(rawTags, "@")
 	splRawTags := strings.Split(rawTags, ";")

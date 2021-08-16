@@ -1,6 +1,8 @@
 package tmi
 
-import "time"
+import (
+	"time"
+)
 
 type MessageType int
 
@@ -59,12 +61,14 @@ type Message interface {
 	GetType() MessageType
 }
 
+type IRCTags map[string]string
+
 type IRCData struct {
-	Raw     string            `json:"raw"`
-	Tags    map[string]string `json:"tags"`
-	Prefix  string            `json:"prefix"`
-	Command string            `json:"command"`
-	Params  []string          `json:"params"`
+	Raw     string   `json:"raw"`
+	Tags    IRCTags  `json:"tags"`
+	Prefix  string   `json:"prefix"`
+	Command string   `json:"command"`
+	Params  []string `json:"params"`
 }
 
 type UnsetMessage struct {

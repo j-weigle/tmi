@@ -173,11 +173,8 @@ func (c *Client) UpdatePassword(password string) {
 func (c *Client) OnUnsetMessage(cb func(UnsetMessage)) {
 	c.handlers.onUnsetMessage = cb
 }
-func (c *Client) OnWelcomeMessage(cb func(WelcomeMessage)) {
-	c.handlers.onWelcomeMessage = cb
-}
-func (c *Client) OnInvalidIRCMessage(cb func(InvalidIRCMessage)) {
-	c.handlers.onInvalidIRCMessage = cb
+func (c *Client) OnConnected(cb func()) {
+	c.handlers.onConnected = cb
 }
 func (c *Client) OnClearChatMessage(cb func(ClearChatMessage)) {
 	c.handlers.onClearChatMessage = cb

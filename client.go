@@ -31,8 +31,7 @@ type Client struct {
 
 type onMessageHandlers struct {
 	onUnsetMessage           func(UnsetMessage)
-	onWelcomeMessage         func(WelcomeMessage)
-	onInvalidIRCMessage      func(InvalidIRCMessage)
+	onConnected              func()
 	onClearChatMessage       func(ClearChatMessage)
 	onClearMsgMessage        func(ClearMsgMessage)
 	onGlobalUserstateMessage func(GlobalUserstateMessage)

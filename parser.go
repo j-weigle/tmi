@@ -110,22 +110,6 @@ func parseUnsetMessage(ircData IRCData) (UnsetMessage, error) {
 	return UnsetMessage{}, errors.New("parseUnsetMessage not implemented yet")
 }
 
-func parseInvalidIRCMessage(ircData IRCData) (InvalidIRCMessage, error) {
-	var invalidIRCMessage = InvalidIRCMessage{
-		Data:    ircData,
-		IRCType: ircData.Command,
-		Type:    INVALIDIRC,
-	}
-	if len(ircData.Params) == 3 {
-		invalidIRCMessage.User = ircData.Params[0]
-		invalidIRCMessage.Unknown = ircData.Params[1]
-		invalidIRCMessage.Text = ircData.Params[2]
-	} else {
-		return invalidIRCMessage, errors.New("incorrect number of parameters for InvalidIRCMessage")
-	}
-	return invalidIRCMessage, nil
-}
-
 func parseNoticeMessage(ircData IRCData) (NoticeMessage, error) {
 	var noticeMessage = NoticeMessage{
 		IRCType: ircData.Command,

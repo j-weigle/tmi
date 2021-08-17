@@ -10,8 +10,6 @@ const (
 	// Unknown, unrecognized, or non-handled message types
 	UNSET MessageType = iota - 1
 	// tmi.twitch.tv prefixed message types
-	WELCOME
-	INVALIDIRC
 	CLEARCHAT
 	CLEARMSG
 	GLOBALUSERSTATE
@@ -36,8 +34,6 @@ func (mt MessageType) String() string {
 		return "UNSET"
 	}
 	return []string{
-		"WELCOME",
-		"INVALIDIRC",
 		"CLEARCHAT",
 		"CLEARMSG",
 		"GLOBALUSERSTATE",
@@ -72,23 +68,6 @@ type UnsetMessage struct {
 	IRCType string
 	Text    string
 	Type    MessageType
-}
-
-// Initial welcome message after successfully loggging in
-type WelcomeMessage struct {
-	Data    IRCData     `json:"data"`
-	IRCType string      `json:"irc-type"`
-	Type    MessageType `json:"type"`
-}
-
-type InvalidIRCMessage struct {
-	Data    IRCData     `json:"data"`
-	IRCType string      `json:"irc-type"`
-	Text    string      `json:"text"` // "Unknown command"
-	Type    MessageType `json:"type"`
-
-	Unknown string `json:"uknown"` // the command that was used
-	User    string `json:"user"`   // the user who issued the command
 }
 
 // Timeout, ban, or clear all chat

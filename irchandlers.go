@@ -17,14 +17,13 @@ func tmiTwitchTvHandlers(cmd string) (func(*Client, IRCData) error, bool) {
 	// 372 ; RPL_MOTD      RFC1459 ; "You are in a maze of twisty passages, all alike" ; message of the day
 	// 376 ; RPL_ENDOFMOTD RFC1459 ; "\u003e" which is a > ; end message of the day
 	// CAP ; CAP * ACK ; acknowledgement of membership
-	case "002", "003", "004", "375", "372", "376", "CAP", "SERVERCHANGE":
+	// 421 ; ERR_UNKNOWNCOMMAND RFC1459 ; invalid IRC Command
+	case "002", "003", "004", "375", "372", "376", "CAP", "SERVERCHANGE", "421":
 		ok = true
 
 	// IMPLEMENTED
 	case "001": // RPL_WELCOME        RFC2812 ; "Welcome, GLHF"
 		f = (*Client).tmiTwitchTvCommand001
-	case "421": // ERR_UNKNOWNCOMMAND RFC1459 ; invalid IRC Command
-		f = (*Client).tmiTwitchTvCommand421
 	case "CLEARCHAT":
 		f = (*Client).tmiTwitchTvCommandCLEARCHAT
 	case "CLEARMSG":
@@ -121,25 +120,8 @@ func (c *Client) tmiTwitchTvCommand001(ircData IRCData) error {
 	// successful connection, reset the reconnect counter
 	c.reconnectCounter = 0
 
-	var welcomeMessage = WelcomeMessage{
-		Data:    ircData,
-		IRCType: ircData.Command,
-		Type:    WELCOME,
-	}
-
-	if c.handlers.onWelcomeMessage != nil {
-		c.handlers.onWelcomeMessage(welcomeMessage)
-	}
-	return nil
-}
-func (c *Client) tmiTwitchTvCommand421(ircData IRCData) error {
-	var invalidIRCMessage, parseErr = parseInvalidIRCMessage(ircData)
-	if parseErr != nil {
-		c.warnUser(parseErr)
-	}
-
-	if c.handlers.onInvalidIRCMessage != nil {
-		c.handlers.onInvalidIRCMessage(invalidIRCMessage)
+	if c.handlers.onConnected != nil {
+		c.handlers.onConnected()
 	}
 	return nil
 }

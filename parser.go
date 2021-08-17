@@ -64,16 +64,16 @@ func parseIRCMessage(message string) (*IRCData, error) {
 		return ircData, nil
 	}
 
-	var msgOffset = -1
+	var msgIdx = -1
 	for i, v := range fields[idx:] {
 		if strings.HasPrefix(v, ":") {
-			msgOffset = i
+			msgIdx = idx + i
 			break
 		}
 	}
-	if msgOffset >= 0 {
-		ircData.Params = fields[idx : idx+msgOffset]
-		var msgSlice = fields[idx+msgOffset:]
+	if msgIdx >= 0 {
+		ircData.Params = fields[idx:msgIdx]
+		var msgSlice = fields[msgIdx:]
 		msgSlice[0] = strings.TrimPrefix(msgSlice[0], ":")
 		var message = strings.Join(msgSlice, " ")
 		ircData.Params = append(ircData.Params, message)
@@ -84,7 +84,7 @@ func parseIRCMessage(message string) (*IRCData, error) {
 	return ircData, nil
 }
 
-func parseTags(rawTags string) map[string]string {
+func parseTags(rawTags string) IRCTags {
 	var tags IRCTags = make(map[string]string)
 
 	rawTags = strings.TrimPrefix(rawTags, "@")

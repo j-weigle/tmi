@@ -10,8 +10,8 @@ func TestNewClientConfig(t *testing.T) {
 	connection := connectionConfig{true, true, -1, 30000}
 	id := identityConfig{}
 	pinger := pingConfig{
-		wait:    time.Second * 60,
-		timeout: time.Second * 5,
+		interval: time.Second * 60,
+		timeout:  time.Second * 5,
 	}
 
 	want := &clientConfig{connection, id, pinger}

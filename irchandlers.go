@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-func tmiTwitchTvHandlers(cmd string) (func(*client, *IRCData) error, bool) {
-	var f func(*client, *IRCData) error
+func tmiTwitchTvHandlers(cmd string) (func(*Client, IRCData) error, bool) {
+	var f func(*Client, IRCData) error
 	var ok bool
 
 	switch cmd {
@@ -22,27 +22,27 @@ func tmiTwitchTvHandlers(cmd string) (func(*client, *IRCData) error, bool) {
 
 	// IMPLEMENTED
 	case "001": // RPL_WELCOME        RFC2812 ; "Welcome, GLHF"
-		f = (*client).tmiTwitchTvCommand001
+		f = (*Client).tmiTwitchTvCommand001
 	case "421": // ERR_UNKNOWNCOMMAND RFC1459 ; invalid IRC Command
-		f = (*client).tmiTwitchTvCommand421
+		f = (*Client).tmiTwitchTvCommand421
 	case "CLEARCHAT":
-		f = (*client).tmiTwitchTvCommandCLEARCHAT
+		f = (*Client).tmiTwitchTvCommandCLEARCHAT
 	case "CLEARMSG":
-		f = (*client).tmiTwitchTvCommandCLEARMSG
+		f = (*Client).tmiTwitchTvCommandCLEARMSG
 	case "GLOBALUSERSTATE":
-		f = (*client).tmiTwitchTvCommandGLOBALUSERSTATE
+		f = (*Client).tmiTwitchTvCommandGLOBALUSERSTATE
 	case "HOSTTARGET":
-		f = (*client).tmiTwitchTvCommandHOSTTARGET
+		f = (*Client).tmiTwitchTvCommandHOSTTARGET
 	case "NOTICE":
-		f = (*client).tmiTwitchTvCommandNOTICE
+		f = (*Client).tmiTwitchTvCommandNOTICE
 	case "RECONNECT":
-		f = (*client).tmiTwitchTvCommandRECONNECT
+		f = (*Client).tmiTwitchTvCommandRECONNECT
 	case "ROOMSTATE":
-		f = (*client).tmiTwitchTvCommandROOMSTATE
+		f = (*Client).tmiTwitchTvCommandROOMSTATE
 	case "USERNOTICE":
-		f = (*client).tmiTwitchTvCommandUSERNOTICE
+		f = (*Client).tmiTwitchTvCommandUSERNOTICE
 	case "USERSTATE":
-		f = (*client).tmiTwitchTvCommandUSERSTATE
+		f = (*Client).tmiTwitchTvCommandUSERSTATE
 
 	// NOT HANDLED
 	default:
@@ -55,8 +55,8 @@ func tmiTwitchTvHandlers(cmd string) (func(*client, *IRCData) error, bool) {
 	return f, ok
 }
 
-func jtvHandlers(cmd string) (func(*client, *IRCData) error, bool) {
-	var f func(*client, *IRCData) error
+func jtvHandlers(cmd string) (func(*Client, IRCData) error, bool) {
+	var f func(*Client, IRCData) error
 	var ok bool
 
 	switch cmd {
@@ -78,8 +78,8 @@ func jtvHandlers(cmd string) (func(*client, *IRCData) error, bool) {
 	return f, ok
 }
 
-func otherHandlers(cmd string) (func(*client, *IRCData) error, bool) {
-	var f func(*client, *IRCData) error
+func otherHandlers(cmd string) (func(*Client, IRCData) error, bool) {
+	var f func(*Client, IRCData) error
 	var ok bool
 
 	switch cmd {
@@ -90,19 +90,19 @@ func otherHandlers(cmd string) (func(*client, *IRCData) error, bool) {
 
 	// IMPLEMENTED
 	case "353": // RPL_NAMREPLY RFC1459 ; aka NAMES on twitch dev docs
-		f = (*client).otherCommand353
+		f = (*Client).otherCommand353
 	case "JOIN":
-		f = (*client).otherCommandJOIN
+		f = (*Client).otherCommandJOIN
 	case "PART":
-		f = (*client).otherCommandPART
+		f = (*Client).otherCommandPART
 	case "PING":
-		f = (*client).otherCommandPING
+		f = (*Client).otherCommandPING
 	case "PONG":
-		f = (*client).otherCommandPONG
+		f = (*Client).otherCommandPONG
 	case "PRIVMSG":
-		f = (*client).otherCommandPRIVMSG
+		f = (*Client).otherCommandPRIVMSG
 	case "WHISPER":
-		f = (*client).otherCommandWHISPER
+		f = (*Client).otherCommandWHISPER
 
 	// NOT HANDLED
 	default:
@@ -115,43 +115,47 @@ func otherHandlers(cmd string) (func(*client, *IRCData) error, bool) {
 	return f, ok
 }
 
-func (c *client) tmiTwitchTvCommand001(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommand001(ircData IRCData) error {
 	c.connected.set(true)
 	go c.onConnectedJoins()
 	// successful connection, reset the reconnect counter
 	c.reconnectCounter = 0
 
-	var welcomeMessage = &WelcomeMessage{
+	var welcomeMessage = WelcomeMessage{
 		Data:    ircData,
 		IRCType: ircData.Command,
 		Type:    WELCOME,
 	}
 
-	c.callMessageHandler(WELCOME, welcomeMessage)
+	if c.handlers.onWelcomeMessage != nil {
+		c.handlers.onWelcomeMessage(welcomeMessage)
+	}
 	return nil
 }
-func (c *client) tmiTwitchTvCommand421(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommand421(ircData IRCData) error {
 	var invalidIRCMessage, parseErr = parseInvalidIRCMessage(ircData)
 	if parseErr != nil {
 		c.warnUser(parseErr)
 	}
 
-	c.callMessageHandler(INVALIDIRC, invalidIRCMessage)
+	if c.handlers.onInvalidIRCMessage != nil {
+		c.handlers.onInvalidIRCMessage(invalidIRCMessage)
+	}
 	return nil
 }
-func (c *client) tmiTwitchTvCommandCLEARCHAT(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommandCLEARCHAT(ircData IRCData) error {
 	fmt.Println("Got CLEARCHAT")
 	return nil
 }
-func (c *client) tmiTwitchTvCommandCLEARMSG(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommandCLEARMSG(ircData IRCData) error {
 	fmt.Println("Got CLEARMSG")
 	return nil
 }
-func (c *client) tmiTwitchTvCommandHOSTTARGET(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommandHOSTTARGET(ircData IRCData) error {
 	fmt.Println("Got HOSTTARGET")
 	return nil
 }
-func (c *client) tmiTwitchTvCommandNOTICE(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommandNOTICE(ircData IRCData) error {
 	var err error
 	var noticeMessage, parseErr = parseNoticeMessage(ircData)
 	if parseErr != nil {
@@ -160,58 +164,60 @@ func (c *client) tmiTwitchTvCommandNOTICE(ircData *IRCData) error {
 			err = ErrLoginFailure
 		}
 	}
-	c.callMessageHandler(NOTICE, noticeMessage)
+	if c.handlers.onNoticeMessage != nil {
+		c.handlers.onNoticeMessage(noticeMessage)
+	}
 	return err
 }
-func (c *client) tmiTwitchTvCommandRECONNECT(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommandRECONNECT(ircData IRCData) error {
 	fmt.Println("Got RECONNECT")
 	return nil
 }
-func (c *client) tmiTwitchTvCommandROOMSTATE(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommandROOMSTATE(ircData IRCData) error {
 	fmt.Println("Got ROOMSTATE")
 	return nil
 }
-func (c *client) tmiTwitchTvCommandUSERNOTICE(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommandUSERNOTICE(ircData IRCData) error {
 	fmt.Println("Got USERNOTICE")
 	return nil
 }
-func (c *client) tmiTwitchTvCommandUSERSTATE(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommandUSERSTATE(ircData IRCData) error {
 	fmt.Println("Got USERSTATE")
 	return nil
 }
-func (c *client) tmiTwitchTvCommandGLOBALUSERSTATE(ircData *IRCData) error {
+func (c *Client) tmiTwitchTvCommandGLOBALUSERSTATE(ircData IRCData) error {
 	fmt.Println("Got GLOBALUSERSTATE")
 	return nil
 }
 
-func (c *client) otherCommand353(ircData *IRCData) error {
+func (c *Client) otherCommand353(ircData IRCData) error {
 	fmt.Println("Got 353: NAMES")
 	return nil
 }
-func (c *client) otherCommandJOIN(ircData *IRCData) error {
+func (c *Client) otherCommandJOIN(ircData IRCData) error {
 	fmt.Println("Got JOIN")
 	return nil
 }
-func (c *client) otherCommandPART(ircData *IRCData) error {
+func (c *Client) otherCommandPART(ircData IRCData) error {
 	fmt.Println("Got PART")
 	return nil
 }
-func (c *client) otherCommandPING(ircData *IRCData) error {
+func (c *Client) otherCommandPING(ircData IRCData) error {
 	c.send("PONG :tmi.twitch.tv")
 	return nil
 }
-func (c *client) otherCommandPONG(ircData *IRCData) error {
+func (c *Client) otherCommandPONG(ircData IRCData) error {
 	select {
 	case c.rcvdPong <- struct{}{}:
 	default:
 	}
 	return nil
 }
-func (c *client) otherCommandPRIVMSG(ircData *IRCData) error {
+func (c *Client) otherCommandPRIVMSG(ircData IRCData) error {
 	fmt.Println("Got PRIVMSG")
 	return nil
 }
-func (c *client) otherCommandWHISPER(ircData *IRCData) error {
+func (c *Client) otherCommandWHISPER(ircData IRCData) error {
 	fmt.Println("Got WHISPER")
 	return nil
 }

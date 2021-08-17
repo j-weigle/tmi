@@ -57,10 +57,6 @@ func (mt MessageType) String() string {
 	}[mt]
 }
 
-type Message interface {
-	GetType() MessageType
-}
-
 type IRCTags map[string]string
 
 type IRCData struct {
@@ -72,7 +68,7 @@ type IRCData struct {
 }
 
 type UnsetMessage struct {
-	Data    *IRCData
+	Data    IRCData
 	IRCType string
 	Text    string
 	Type    MessageType
@@ -80,13 +76,13 @@ type UnsetMessage struct {
 
 // Initial welcome message after successfully loggging in
 type WelcomeMessage struct {
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 }
 
 type InvalidIRCMessage struct {
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"` // "Unknown command"
 	Type    MessageType `json:"type"`
@@ -98,7 +94,7 @@ type InvalidIRCMessage struct {
 // Timeout, ban, or clear all chat
 type ClearChatMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"` // a sentence explaining what the clear chat did
 	Type    MessageType `json:"type"`
@@ -110,7 +106,7 @@ type ClearChatMessage struct {
 // Singular message deletion
 type ClearMsgMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"` // the deleted message
 	Type    MessageType `json:"type"`
@@ -121,7 +117,7 @@ type ClearMsgMessage struct {
 
 // Information about user that successfully logged in
 type GlobalUserstateMessage struct {
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
@@ -131,7 +127,7 @@ type GlobalUserstateMessage struct {
 
 type HostTargetMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"` // "<channel> began hosting <hosted>" or "<channel> exited host mode"
 	Type    MessageType `json:"type"`
@@ -142,7 +138,7 @@ type HostTargetMessage struct {
 
 type NoticeMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
@@ -155,14 +151,14 @@ type NoticeMessage struct {
 }
 
 type ReconnectMessage struct {
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 }
 
 type RoomstateMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
@@ -178,7 +174,7 @@ type RoomState struct { // note followers-only: -1 (disabled), 0 (enabled immedi
 
 type UsernoticeMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
@@ -190,7 +186,7 @@ type UsernoticeMessage struct {
 
 type UserstateMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
@@ -200,7 +196,7 @@ type UserstateMessage struct {
 
 type NamesMessage struct { // warning: technically deprecated, but not quite removed yet
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
@@ -209,7 +205,7 @@ type NamesMessage struct { // warning: technically deprecated, but not quite rem
 
 type JoinMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
@@ -218,7 +214,7 @@ type JoinMessage struct {
 
 type PartMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
@@ -226,14 +222,14 @@ type PartMessage struct {
 }
 
 type PingMessage struct {
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 }
 
 type PongMessage struct {
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
@@ -241,7 +237,7 @@ type PongMessage struct {
 
 type PrivmsgMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
@@ -252,7 +248,7 @@ type PrivmsgMessage struct {
 
 type WhisperMessage struct {
 	Channel string      `json:"channel"`
-	Data    *IRCData    `json:"data"`
+	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
@@ -279,82 +275,24 @@ type EmotePosition struct {
 }
 
 type User struct {
-	BadgeInfo    string   `json:"badgeinfo"`
-	Badges       []*Badge `json:"badges"`
-	Bits         int      `json:"bits"`
-	Broadcaster  bool     `json:"broadcaster"`
-	Color        string   `json:"color"`
-	DisplayName  string   `json:"displayname"`
-	Emotes       []*Emote `json:"emotes"`
-	Flags        string   `json:"flags"`
-	ID           string   `json:"id"`
-	Mod          bool     `json:"mod"`
-	Name         string   `json:"name"`
-	RoomID       string   `json:"roomid"`
-	Subscriber   bool     `json:"subscriber"`
-	TmiSentTs    string   `json:"tmisentts"`
-	Turbo        bool     `json:"turbo"`
-	UserID       string   `json:"userid"`
-	UserType     string   `json:"usertype"`
-	BadgeInfoRaw string   `json:"badgeinforaw"`
-	BadgesRaw    string   `json:"badgesraw"`
-	EmotesRaw    string   `json:"emotesraw"`
-}
-
-func (msg *UnsetMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *WelcomeMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *InvalidIRCMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *ClearChatMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *ClearMsgMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *GlobalUserstateMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *HostTargetMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *NoticeMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *ReconnectMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *RoomstateMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *UsernoticeMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *UserstateMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *NamesMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *JoinMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *PartMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *PingMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *PongMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *PrivmsgMessage) GetType() MessageType {
-	return msg.Type
-}
-func (msg *WhisperMessage) GetType() MessageType {
-	return msg.Type
+	BadgeInfo    string  `json:"badgeinfo"`
+	Badges       []Badge `json:"badges"`
+	Bits         int     `json:"bits"`
+	Broadcaster  bool    `json:"broadcaster"`
+	Color        string  `json:"color"`
+	DisplayName  string  `json:"displayname"`
+	Emotes       []Emote `json:"emotes"`
+	Flags        string  `json:"flags"`
+	ID           string  `json:"id"`
+	Mod          bool    `json:"mod"`
+	Name         string  `json:"name"`
+	RoomID       string  `json:"roomid"`
+	Subscriber   bool    `json:"subscriber"`
+	TmiSentTs    string  `json:"tmisentts"`
+	Turbo        bool    `json:"turbo"`
+	UserID       string  `json:"userid"`
+	UserType     string  `json:"usertype"`
+	BadgeInfoRaw string  `json:"badgeinforaw"`
+	BadgesRaw    string  `json:"badgesraw"`
+	EmotesRaw    string  `json:"emotesraw"`
 }

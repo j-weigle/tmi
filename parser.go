@@ -27,8 +27,8 @@ func (tags IRCTags) EscapeIRCTagValues() {
 
 }
 
-func parseIRCMessage(message string) (*IRCData, error) {
-	ircData := &IRCData{
+func parseIRCMessage(message string) (IRCData, error) {
+	ircData := IRCData{
 		Raw:    message,
 		Params: []string{},
 	}
@@ -106,12 +106,12 @@ func parseTags(rawTags string) IRCTags {
 }
 
 // TODO:
-func parseUnsetMessage(ircData *IRCData) (*UnsetMessage, error) {
-	return &UnsetMessage{}, errors.New("parseUnsetMessage not implemented yet")
+func parseUnsetMessage(ircData IRCData) (UnsetMessage, error) {
+	return UnsetMessage{}, errors.New("parseUnsetMessage not implemented yet")
 }
 
-func parseInvalidIRCMessage(ircData *IRCData) (*InvalidIRCMessage, error) {
-	var invalidIRCMessage = &InvalidIRCMessage{
+func parseInvalidIRCMessage(ircData IRCData) (InvalidIRCMessage, error) {
+	var invalidIRCMessage = InvalidIRCMessage{
 		Data:    ircData,
 		IRCType: ircData.Command,
 		Type:    INVALIDIRC,
@@ -126,8 +126,8 @@ func parseInvalidIRCMessage(ircData *IRCData) (*InvalidIRCMessage, error) {
 	return invalidIRCMessage, nil
 }
 
-func parseNoticeMessage(ircData *IRCData) (*NoticeMessage, error) {
-	var noticeMessage = &NoticeMessage{
+func parseNoticeMessage(ircData IRCData) (NoticeMessage, error) {
+	var noticeMessage = NoticeMessage{
 		IRCType: ircData.Command,
 		Data:    ircData,
 		Type:    NOTICE,

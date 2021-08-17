@@ -22,16 +22,8 @@ func TestLoginFailure(t *testing.T) {
 		}
 	})
 
-	client.On(NOTICE, func(m Message) {
-		var message, ok = m.(*NoticeMessage)
-		if !ok {
-			t.Errorf("Could not convert notice message to *NoticeMessage")
-		}
-		if message != nil {
-			fmt.Println(message.Text)
-		} else {
-			t.Errorf("notice message was nil")
-		}
+	client.OnNoticeMessage(func(message NoticeMessage) {
+		fmt.Println(message.Text)
 	})
 
 	err := client.Connect()
@@ -49,7 +41,7 @@ func TestTmiTwitchTvCommand421(t *testing.T) {
 
 	var testMessage = fmt.Sprintf(":tmi.twitch.tv %v %v %v :%v", ircType, username, unknown, text)
 
-	var want = &InvalidIRCMessage{
+	var want = InvalidIRCMessage{
 		IRCType: ircType,
 		Text:    text,
 		Type:    INVALIDIRC,
@@ -59,25 +51,30 @@ func TestTmiTwitchTvCommand421(t *testing.T) {
 
 	config := NewClientConfig()
 	c := NewClient(config)
-	c.On(INVALIDIRC, func(m Message) {
-		var message, ok = m.(*InvalidIRCMessage)
-		if !ok {
-			t.Errorf("Could not convert notice message to *InvalidIRCMessage")
+	c.OnInvalidIRCMessage(func(message InvalidIRCMessage) {
+		message.Data = IRCData{}
+		if !want.Data.equals(&message.Data) {
+			t.Errorf("want: %+v, got : %+v", want, message)
 		}
-		if message != nil {
-			message.Data = nil
-			if *want != *message {
-				t.Errorf("want: %+v, got : %+v", want, message)
-			}
-		} else {
-			t.Errorf("421 message was nil")
+		if want.IRCType != message.IRCType {
+			t.Errorf("want: %+v, got : %+v", want, message)
+		}
+		if want.Text != message.Text {
+			t.Errorf("want: %+v, got : %+v", want, message)
+		}
+		if want.Type != message.Type {
+			t.Errorf("want: %+v, got : %+v", want, message)
+		}
+		if want.Unknown != message.Unknown {
+			t.Errorf("want: %+v, got : %+v", want, message)
+		}
+		if want.User != message.User {
+			t.Errorf("want: %+v, got : %+v", want, message)
 		}
 	})
 
-	var client = c.(*client) // convert Client interface to *client struct
-
 	var ircData, _ = parseIRCMessage(testMessage)
-	var err = client.tmiTwitchTvCommand421(ircData)
+	var err = c.tmiTwitchTvCommand421(ircData)
 	if err != nil {
 		t.Error(err)
 	}

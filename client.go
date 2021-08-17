@@ -11,83 +11,64 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type Client interface {
-	// Connect connects to irc-ws.chat.twitch.tv and attempts to reconnect on connection errors.
-	Connect() error
-
-	// Disconnect closes the connection to the server, and does not attempt to reconnect.
-	Disconnect()
-
-	// Join joins channel.
-	Join(channels ...string) error
-
-	// On sets the callback function to cb for the MessageType mt.
-	On(mt MessageType, cb func(Message))
-
-	// Done sets the callback function for when a client is done to cb. Useful for running a client in a goroutine.
-	OnDone(cb func(fatal error))
-
-	// OnErr sets the callback function for general error messages to cb.
-	OnErr(cb func(error))
-
-	// Part leaves channel.
-	Part(channel string) error
-
-	// Say sends a PRIVMSG message in channel.
-	Say(channel string, message string) error
-
-	// UpdatePassword updates the password the client uses for authentication.
-	UpdatePassword(string)
-}
-
-type client struct {
+type Client struct {
 	channels         map[string]bool
 	channelsMutex    sync.RWMutex
-	config           *clientConfig
+	config           clientConfig
 	conn             *websocket.Conn
 	connected        atomicBool
-	done             func(error)                   // callback function for fatal errors.
-	handlers         map[MessageType]func(Message) // callback functions for each MessageType.
-	inbound          chan string                   // for sending inbound messages to the handlers, acts as a buffer.
-	joinQMutex       sync.Mutex                    // join queue mutex, prevent exceeding join rate limit
-	notifDisconnect  notifier                      // used for disconnect call notifications
-	onError          func(error)                   // callback function for non-fatal errors.
-	outbound         chan string                   // for sending outbound messages to the writer.
-	rcvdMsg          chan struct{}                 // when conn reads, notifies ping loop.
-	rcvdPong         chan struct{}                 // when pong received, notifies ping loop.
-	reconnectCounter int                           // for keeping track of reconnect attempts before a successful attempt.
+	done             func(error) // callback function for fatal errors.
+	handlers         onMessageHandlers
+	inbound          chan string   // for sending inbound messages to the handlers, acts as a buffer.
+	joinQMutex       sync.Mutex    // join queue mutex, prevent exceeding join rate limit
+	notifDisconnect  notifier      // used for disconnect call notifications
+	onError          func(error)   // callback function for non-fatal errors.
+	outbound         chan string   // for sending outbound messages to the writer.
+	rcvdMsg          chan struct{} // when conn reads, notifies ping loop.
+	rcvdPong         chan struct{} // when pong received, notifies ping loop.
+	reconnectCounter int           // for keeping track of reconnect attempts before a successful attempt.
+}
+
+type onMessageHandlers struct {
+	onUnsetMessage           func(UnsetMessage)
+	onWelcomeMessage         func(WelcomeMessage)
+	onInvalidIRCMessage      func(InvalidIRCMessage)
+	onClearChatMessage       func(ClearChatMessage)
+	onClearMsgMessage        func(ClearMsgMessage)
+	onGlobalUserstateMessage func(GlobalUserstateMessage)
+	onHostTargetMessage      func(HostTargetMessage)
+	onNoticeMessage          func(NoticeMessage)
+	onReconnectMessage       func(ReconnectMessage)
+	onRoomstateMessage       func(RoomstateMessage)
+	onUserNoticeMessage      func(UsernoticeMessage)
+	onUserstateMessage       func(UserstateMessage)
+	onNamesMessage           func(NamesMessage)
+	onJoinMessage            func(JoinMessage)
+	onPartMessage            func(PartMessage)
+	onPingMessage            func(PingMessage)
+	onPongMessage            func(PongMessage)
+	onPrivmsgMessage         func(PrivmsgMessage)
+	onWhisperMessage         func(WhisperMessage)
 }
 
 // NewClient returns a new client using the provided config.
-func NewClient(c *clientConfig) Client {
-	config := *c
-	return &client{
+func NewClient(c clientConfig) *Client {
+	return &Client{
 		channels: make(map[string]bool),
-		config:   &config,
-		handlers: make(map[MessageType]func(Message)),
+		config:   c,
 		inbound:  make(chan string, 512),
 		outbound: make(chan string, 512),
 		rcvdMsg:  make(chan struct{}),
 	}
 }
 
-func (c *client) callDone(err error) {
+func (c *Client) callDone(err error) {
 	if c.done != nil {
 		c.done(err)
 	}
 }
 
-func (c *client) callMessageHandler(mt MessageType, message Message) {
-	if h, ok := c.handlers[mt]; ok {
-		if h != nil {
-			h(message)
-		} else {
-			c.warnUser(errors.New("message handler for type " + mt.String() + "was set, but value was nil"))
-		}
-	}
-}
-
-func (c *client) connect(u url.URL) error {
+func (c *Client) connect(u url.URL) error {
 	var err error
 	select { // Check disconnect has not been called before bothering to reconnect.
 	case <-c.notifDisconnect.ch:
@@ -137,20 +118,22 @@ func (c *client) connect(u url.URL) error {
 }
 
 // disconnect sends a close message to the server and then closes the connection.
-func (c *client) disconnect() {
+func (c *Client) disconnect() {
 	c.conn.WriteMessage(websocket.CloseMessage,
 		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	c.conn.Close()
 }
 
-func (c *client) handleMessage(rawMessage string) error {
+func (c *Client) handleMessage(rawMessage string) error {
 	var ircData, errParseIRC = parseIRCMessage(rawMessage)
 	var parseUnset = func() error {
 		var unsetMessage, err = parseUnsetMessage(ircData)
 		if err != nil {
 			c.warnUser(err)
 		}
-		c.callMessageHandler(UNSET, unsetMessage)
+		if c.handlers.onUnsetMessage != nil {
+			c.handlers.onUnsetMessage(unsetMessage)
+		}
 		return nil
 	}
 	if errParseIRC != nil {
@@ -190,7 +173,7 @@ func (c *client) handleMessage(rawMessage string) error {
 }
 
 // locks join queue and begins sending joins on a interval
-func (c *client) joinChannels(channels []string) {
+func (c *Client) joinChannels(channels []string) {
 	if channels == nil || len(channels) < 1 {
 		return
 	}
@@ -213,7 +196,7 @@ func (c *client) joinChannels(channels []string) {
 	}
 }
 
-func (c *client) onConnectedJoins() {
+func (c *Client) onConnectedJoins() {
 	var channels = []string{}
 	c.channelsMutex.Lock()
 	for channel := range c.channels {
@@ -224,7 +207,7 @@ func (c *client) onConnectedJoins() {
 	c.joinChannels(channels)
 }
 
-func (c *client) readInbound(ctx context.Context, closeErrCb func(error)) {
+func (c *Client) readInbound(ctx context.Context, closeErrCb func(error)) {
 	for {
 		select {
 		case <-c.notifDisconnect.ch:
@@ -241,7 +224,7 @@ func (c *client) readInbound(ctx context.Context, closeErrCb func(error)) {
 	}
 }
 
-func (c *client) send(message string) error {
+func (c *Client) send(message string) error {
 	select {
 	case c.outbound <- message:
 		return nil
@@ -250,7 +233,7 @@ func (c *client) send(message string) error {
 	}
 }
 
-func (c *client) sendConnectSequence() (err error) {
+func (c *Client) sendConnectSequence() (err error) {
 	var message string
 	message = "PASS " + c.config.Identity.password
 	err = c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
@@ -267,7 +250,7 @@ func (c *client) sendConnectSequence() (err error) {
 	return
 }
 
-func (c *client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
+func (c *Client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
 	// recreate each time so that there isn't a pong sitting in the channel on reconnects
 	c.rcvdPong = make(chan struct{}, 1)
 
@@ -283,7 +266,7 @@ func (c *client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 			case <-c.rcvdMsg:
 				continue
 
-			case <-time.After(c.config.Pinger.wait):
+			case <-time.After(c.config.Pinger.interval):
 				c.send("PING :tmi.twitch.tv")
 
 				select {
@@ -299,7 +282,7 @@ func (c *client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 	}()
 }
 
-func (c *client) spawnReader(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
+func (c *Client) spawnReader(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -329,7 +312,7 @@ func (c *client) spawnReader(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 	}()
 }
 
-func (c *client) spawnWriter(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
+func (c *Client) spawnWriter(ctx context.Context, wg *sync.WaitGroup, closeErrCb func(error)) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -353,7 +336,7 @@ func (c *client) spawnWriter(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 	}()
 }
 
-func (c *client) warnUser(err error) {
+func (c *Client) warnUser(err error) {
 	if c.onError != nil {
 		c.onError(err)
 	}

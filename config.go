@@ -26,18 +26,18 @@ type identityConfig struct {
 }
 
 type pingConfig struct {
-	wait    time.Duration // how long to wait before sending a ping when no messages have been received
-	timeout time.Duration // how long to wait on a pong before reconnecting
+	interval time.Duration // how long to wait before sending a ping when no messages have been received
+	timeout  time.Duration // how long to wait on a pong before reconnecting
 }
 
 // NewClientConfig returns a client config with Connection settings initialzed
 // to the recommended defaults. Identity is initialzed but left empty.
-func NewClientConfig() *clientConfig {
+func NewClientConfig() clientConfig {
 	conn := connectionConfig{}
 	conn.Default()
 	pinger := pingConfig{}
 	pinger.Default()
-	return &clientConfig{
+	return clientConfig{
 		Connection: conn,
 		Identity:   identityConfig{},
 		Pinger:     pinger,
@@ -108,12 +108,12 @@ func (id *identityConfig) SetUsername(username string) {
 
 // Set sets the idle wait time and timeout for ping configuration p.
 func (p *pingConfig) Set(wait, timeout time.Duration) {
-	p.wait = wait
+	p.interval = wait
 	p.timeout = timeout
 }
 
 // Default sets the ping configuration options to their recommended defaults.
 func (p *pingConfig) Default() {
-	p.wait = time.Minute
+	p.interval = time.Minute
 	p.timeout = time.Second * 5
 }

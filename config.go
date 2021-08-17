@@ -8,10 +8,9 @@ import (
 )
 
 type clientConfig struct {
-	Channels   []string          // which channels the client will connect to.
-	Connection *connectionConfig // how the client will connect and reconnect.
-	Identity   *identityConfig   // who the client logs in as.
-	Pinger     *pingConfig       // how often to ping, and timeout.
+	Connection connectionConfig // how the client will connect and reconnect.
+	Identity   identityConfig   // who the client logs in as.
+	Pinger     pingConfig       // how often to ping, and timeout.
 }
 
 type connectionConfig struct {
@@ -34,31 +33,15 @@ type pingConfig struct {
 // NewClientConfig returns a client config with Connection settings initialzed
 // to the recommended defaults. Identity is initialzed but left empty.
 func NewClientConfig() *clientConfig {
-	var conn = &connectionConfig{}
+	conn := connectionConfig{}
 	conn.Default()
-	var id = &identityConfig{}
-	var pinger = &pingConfig{}
+	pinger := pingConfig{}
 	pinger.Default()
 	return &clientConfig{
 		Connection: conn,
-		Identity:   id,
+		Identity:   identityConfig{},
 		Pinger:     pinger,
 	}
-}
-
-// deepCopy returns a deep copy of the calling client config.
-func (c *clientConfig) deepCopy() *clientConfig {
-	var config = &clientConfig{}
-	var conn = *c.Connection
-	var id = *c.Identity
-	var chans = make([]string, len(c.Channels))
-	var pinger = *c.Pinger
-	copy(chans, c.Channels)
-	config.Connection = &conn
-	config.Identity = &id
-	config.Channels = chans
-	config.Pinger = &pinger
-	return config
 }
 
 // SetReconnect sets whether the client will attempt to reconnect

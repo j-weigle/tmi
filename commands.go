@@ -30,7 +30,7 @@ func (c *client) Connect() error {
 		u = url.URL{Scheme: "ws", Host: twitchWSHost}
 	}
 
-	var maxReconnectAttempts = c.config.Connection.maxReconnectAttempts
+	var maxReconnectAttempts int = c.config.Connection.maxReconnectAttempts
 	var maxReconnectInterval = time.Duration(c.config.Connection.maxReconnectInterval)
 
 	// Reset disconnect before starting connection loop. connect() will check if it has
@@ -50,7 +50,7 @@ func (c *client) Connect() error {
 				return err
 			}
 
-			i := c.reconnectCounter
+			var i int = c.reconnectCounter
 			c.reconnectCounter++
 
 			if c.reconnectCounter < 0 { // in case of overflow, reset to overflow point in order to maintain max interval
@@ -92,30 +92,31 @@ func (c *client) Disconnect() {
 }
 
 // Join joins channel.
-func (c *client) Join(channel string) error {
-	if channel == "" {
-		return errors.New("channel was empty string")
-	}
-	channel = strings.ToLower(channel)
-	if !strings.HasPrefix(channel, "#") {
-		channel = "#" + channel
-	}
-
-	return c.send("JOIN " + channel)
-}
-
-// TODO: handle joins without breaking Twitch JOIN limits
-func (c *client) J_oin(channels []string) error {
+func (c *client) Join(channels ...string) error {
 	if channels == nil || len(channels) < 1 {
 		return errors.New("channels was empty or nil")
 	}
-	for i, channel := range channels {
-		channels[i] = strings.ToLower(channel)
-		if !strings.HasPrefix(channel, "#") {
-			channels[i] = "#" + channel
+
+	var newJoins = []string{}
+	c.channelsMutex.Lock()
+	for _, ch := range channels {
+		ch = strings.ToLower(ch)
+		if !strings.HasPrefix(ch, "#") {
+			ch = "#" + ch
+		}
+
+		if _, ok := c.channels[ch]; !ok {
+			c.channels[ch] = false
+			newJoins = append(newJoins, ch)
 		}
 	}
+	c.channelsMutex.Unlock()
 
+	if c.connected.get() {
+		if len(newJoins) > 0 {
+			go c.joinChannels(newJoins)
+		}
+	}
 	return nil
 }
 
@@ -136,11 +137,22 @@ func (c *client) OnErr(cb func(error)) {
 
 // Part leaves channel.
 func (c *client) Part(channel string) error {
+	if channel == "" {
+		return errors.New("channel was empty")
+	}
+	channel = strings.ToLower(channel)
 	if !strings.HasPrefix(channel, "#") {
 		channel = "#" + channel
 	}
 
-	return c.send("PART " + channel)
+	if c.connected.get() {
+		c.send("PART " + channel)
+	}
+
+	c.channelsMutex.Lock()
+	delete(c.channels, channel)
+	c.channelsMutex.Unlock()
+	return nil
 }
 
 // Say sends a PRIVMSG message in channel.

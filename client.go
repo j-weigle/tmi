@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -19,7 +20,7 @@ type Client interface {
 	Disconnect()
 
 	// Join joins channel.
-	Join(channel string) error
+	Join(channels ...string) error
 
 	// On sets the callback function to cb for the MessageType mt.
 	On(mt MessageType, cb func(Message))
@@ -41,17 +42,34 @@ type Client interface {
 }
 
 type client struct {
+	channels         map[string]bool
+	channelsMutex    sync.RWMutex
 	config           *clientConfig
 	conn             *websocket.Conn
+	connected        atomicBool
 	done             func(error)                   // callback function for fatal errors.
 	handlers         map[MessageType]func(Message) // callback functions for each MessageType.
 	inbound          chan string                   // for sending inbound messages to the handlers, acts as a buffer.
+	joinQMutex       sync.Mutex                    // join queue mutex, prevent exceeding join rate limit
 	notifDisconnect  notifier                      // used for disconnect call notifications
 	onError          func(error)                   // callback function for non-fatal errors.
 	outbound         chan string                   // for sending outbound messages to the writer.
 	rcvdMsg          chan struct{}                 // when conn reads, notifies ping loop.
 	rcvdPong         chan struct{}                 // when pong received, notifies ping loop.
 	reconnectCounter int                           // for keeping track of reconnect attempts before a successful attempt.
+}
+
+type atomicBool struct{ val int32 }
+
+func (atom *atomicBool) set(val bool) {
+	if val {
+		atomic.StoreInt32(&atom.val, 1)
+	} else {
+		atomic.StoreInt32(&atom.val, 0)
+	}
+}
+func (atom *atomicBool) get() bool {
+	return atomic.LoadInt32(&atom.val) == 1
 }
 
 type connCloseErr struct {
@@ -102,9 +120,9 @@ func (n *notifier) reset() {
 
 // NewClient returns a new client using the provided config.
 func NewClient(c *clientConfig) Client {
-	var config = c.deepCopy()
+	config := *c
 	return &client{
-		config:   config,
+		config:   &config,
 		handlers: make(map[MessageType]func(Message)),
 		inbound:  make(chan string, 512),
 		outbound: make(chan string, 512),
@@ -166,16 +184,13 @@ func (c *client) connect(u url.URL) error {
 	// It will ping c.conn after it hasn't received a message for c.config.Pinger.wait.
 	c.spawnPinger(ctx, wg, closeErrCb)
 
-	// TODO: c.Join(c.config.Channels)
-
 	// Block and wait for a Disconnect() call or a connection error.
 	c.readInbound(ctx, closeErrCb)
 
+	c.connected.set(false)
+
 	// Make sure reader, writer, and pinger have finished.
 	wg.Wait()
-
-	// Double check connection was closed.
-	c.disconnect()
 
 	return closeErr.err
 }
@@ -231,6 +246,41 @@ func (c *client) handleMessage(rawMessage string) error {
 	}
 
 	return parseUnset()
+}
+
+// locks join queue and begins sending joins on a interval
+func (c *client) joinChannels(channels []string) {
+	if channels == nil || len(channels) < 1 {
+		return
+	}
+
+	c.joinQMutex.Lock() // prevent exceeding join limit
+	defer c.joinQMutex.Unlock()
+	// join limit is 20 attempts per 10 seconds per user,
+	// 0.6s interval allows a 0.1s grace period to be safe
+	const interval = time.Millisecond * 600
+
+	for _, ch := range channels {
+		if c.connected.get() {
+			if c.send("JOIN "+ch) == nil {
+				c.channelsMutex.Lock()
+				c.channels[ch] = true
+				c.channelsMutex.Unlock()
+				time.Sleep(interval)
+			}
+		}
+	}
+}
+
+func (c *client) onConnectedJoins() {
+	var channels = []string{}
+	c.channelsMutex.Lock()
+	for channel := range c.channels {
+		c.channels[channel] = false
+		channels = append(channels, channel)
+	}
+	c.channelsMutex.Unlock()
+	c.joinChannels(channels)
 }
 
 func (c *client) readInbound(ctx context.Context, closeErrCb func(error)) {

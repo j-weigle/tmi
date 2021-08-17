@@ -116,6 +116,8 @@ func otherHandlers(cmd string) (func(*client, *IRCData) error, bool) {
 }
 
 func (c *client) tmiTwitchTvCommand001(ircData *IRCData) error {
+	c.connected.set(true)
+	go c.onConnectedJoins()
 	// successful connection, reset the reconnect counter
 	c.reconnectCounter = 0
 

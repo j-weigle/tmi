@@ -163,5 +163,30 @@ func TestParseIRCMessage(t *testing.T) {
 }
 
 func TestEscapeIRCTagValues(t *testing.T) {
-	// TODO:
+	testTags := make(IRCTags)
+	testTags["t1"] = `ronni\shas\ssubscribed\sfor\s6\smonths!`
+	testTags["t2"] = `TWW2\sgifted\sa\sTier\s1\ssub\sto\sMr_Woodchuck!`
+	testTags["t3"] = `An\sanonymous\suser\sgifted\sa\sTier\s1\ssub\sto\sTenureCalculator!\s`
+	testTags["t4"] = `15\sraiders\sfrom\sTestChannel\shave\sjoined\n!`
+	testTags["t5"] = `Seventoes\sis\snew\shere!`
+	testTags["t6"] = `\\I\shave\n\sall\r\sthe\ssymbols\:\s`
+
+	tests := []struct {
+		key  string
+		want string
+	}{
+		{"t1", "ronni has subscribed for 6 months!"},
+		{"t2", "TWW2 gifted a Tier 1 sub to Mr_Woodchuck!"},
+		{"t3", "An anonymous user gifted a Tier 1 sub to TenureCalculator!"},
+		{"t4", "15 raiders from TestChannel have joined!"},
+		{"t5", "Seventoes is new here!"},
+		{"t6", `\I have all the symbols;`},
+	}
+
+	testTags.EscapeIRCTagValues()
+	for _, v := range tests {
+		if testTags[v.key] != v.want {
+			t.Errorf("got: %v, want: %v\n", testTags[v.key], v.want)
+		}
+	}
 }

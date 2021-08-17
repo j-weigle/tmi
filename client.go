@@ -122,6 +122,7 @@ func (n *notifier) reset() {
 func NewClient(c *clientConfig) Client {
 	config := *c
 	return &client{
+		channels: make(map[string]bool),
 		config:   &config,
 		handlers: make(map[MessageType]func(Message)),
 		inbound:  make(chan string, 512),

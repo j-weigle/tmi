@@ -13,7 +13,7 @@ import (
 
 type Client struct {
 	channels         map[string]bool
-	channelsMutex    sync.RWMutex
+	channelsMutex    sync.Mutex
 	config           clientConfig
 	conn             *websocket.Conn
 	connected        atomicBool
@@ -88,6 +88,7 @@ func (c *Client) connect(u url.URL) error {
 	// Let goroutines have a callback to signal one another to return using context's CancelFunc.
 	var closeErrCb = func(errReason error) {
 		cancelFunc()
+		c.connected.set(false)
 		closeErr.update(errReason)
 	}
 
@@ -107,8 +108,6 @@ func (c *Client) connect(u url.URL) error {
 
 	// Block and wait for a Disconnect() call or a connection error.
 	c.readInbound(ctx, closeErrCb)
-
-	c.connected.set(false)
 
 	// Make sure reader, writer, and pinger have finished.
 	wg.Wait()
@@ -187,7 +186,7 @@ func (c *Client) joinChannels(channels []string) {
 		if c.connected.get() {
 			if c.send("JOIN "+ch) == nil {
 				c.channelsMutex.Lock()
-				c.channels[ch] = true
+				c.channels[ch] = c.connected.get()
 				c.channelsMutex.Unlock()
 				time.Sleep(interval)
 			}

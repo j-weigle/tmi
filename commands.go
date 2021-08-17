@@ -105,8 +105,11 @@ func (c *Client) Join(channels ...string) error {
 			ch = "#" + ch
 		}
 
-		if _, ok := c.channels[ch]; !ok {
+		connected, ok := c.channels[ch]
+		if !ok {
 			c.channels[ch] = false
+		}
+		if !connected {
 			newJoins = append(newJoins, ch)
 		}
 	}

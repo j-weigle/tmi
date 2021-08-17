@@ -16,6 +16,7 @@ func (tags IRCTags) EscapeIRCTagValues() {
 		{`\:`, `;`},
 		{`\\`, `\`},
 	}
+
 	for k, v := range tags {
 		for _, escape := range ircTagEscapes {
 			v = strings.ReplaceAll(v, escape.from, escape.to)
@@ -24,7 +25,6 @@ func (tags IRCTags) EscapeIRCTagValues() {
 		v = strings.TrimSpace(v)
 		tags[k] = v
 	}
-
 }
 
 func parseIRCMessage(message string) (IRCData, error) {

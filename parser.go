@@ -105,17 +105,21 @@ func parseTags(rawTags string) IRCTags {
 	return tags
 }
 
-// TODO:
 func parseUnsetMessage(ircData IRCData) (UnsetMessage, error) {
-	return UnsetMessage{}, errors.New("parseUnsetMessage not implemented yet")
+	return UnsetMessage{
+		Data:    ircData,
+		IRCType: ircData.Command,
+		Text:    ircData.Raw,
+		Type:    UNSET,
+	}, nil
 }
 
 func parseNoticeMessage(ircData IRCData) (NoticeMessage, error) {
 	var noticeMessage = NoticeMessage{
-		IRCType: ircData.Command,
 		Data:    ircData,
-		Type:    NOTICE,
+		IRCType: ircData.Command,
 		Notice:  "notice",
+		Type:    NOTICE,
 	}
 	noticeMessage.Channel = strings.TrimPrefix(ircData.Params[0], "#")
 	var msg string

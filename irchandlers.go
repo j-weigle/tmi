@@ -1,14 +1,17 @@
 package tmi
 
 import (
+	"errors"
 	"fmt"
 )
 
-func tmiTwitchTvHandlers(cmd string) (func(*Client, IRCData) error, bool) {
-	var f func(*Client, IRCData) error
-	var ok bool
+var (
+	ErrUnrecognizedIRCCommand = errors.New("unrecognized IRC Command")
+	ErrUnsetIRCCommand        = errors.New("unset IRC Command")
+)
 
-	switch cmd {
+func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
+	switch ircData.Command {
 	// UNIMPLEMENTED
 	// 002 ; RPL_YOURHOST  RFC2812 ; "Your host is tmi.twitch.tv"
 	// 003 ; RPL_CREATED   RFC2812 ; "This server is rather new"
@@ -19,99 +22,78 @@ func tmiTwitchTvHandlers(cmd string) (func(*Client, IRCData) error, bool) {
 	// CAP ; CAP * ACK ; acknowledgement of membership
 	// 421 ; ERR_UNKNOWNCOMMAND RFC1459 ; invalid IRC Command
 	case "002", "003", "004", "375", "372", "376", "CAP", "SERVERCHANGE", "421":
-		ok = true
+		return ErrUnsetIRCCommand
 
 	// IMPLEMENTED
 	case "001": // RPL_WELCOME        RFC2812 ; "Welcome, GLHF"
-		f = (*Client).tmiTwitchTvCommand001
+		return c.tmiTwitchTvCommand001(ircData)
 	case "CLEARCHAT":
-		f = (*Client).tmiTwitchTvCommandCLEARCHAT
+		return c.tmiTwitchTvCommandCLEARCHAT(ircData)
 	case "CLEARMSG":
-		f = (*Client).tmiTwitchTvCommandCLEARMSG
+		return c.tmiTwitchTvCommandCLEARMSG(ircData)
 	case "GLOBALUSERSTATE":
-		f = (*Client).tmiTwitchTvCommandGLOBALUSERSTATE
+		return c.tmiTwitchTvCommandGLOBALUSERSTATE(ircData)
 	case "HOSTTARGET":
-		f = (*Client).tmiTwitchTvCommandHOSTTARGET
+		return c.tmiTwitchTvCommandHOSTTARGET(ircData)
 	case "NOTICE":
-		f = (*Client).tmiTwitchTvCommandNOTICE
+		return c.tmiTwitchTvCommandNOTICE(ircData)
 	case "RECONNECT":
-		f = (*Client).tmiTwitchTvCommandRECONNECT
+		return c.tmiTwitchTvCommandRECONNECT(ircData)
 	case "ROOMSTATE":
-		f = (*Client).tmiTwitchTvCommandROOMSTATE
+		return c.tmiTwitchTvCommandROOMSTATE(ircData)
 	case "USERNOTICE":
-		f = (*Client).tmiTwitchTvCommandUSERNOTICE
+		return c.tmiTwitchTvCommandUSERNOTICE(ircData)
 	case "USERSTATE":
-		f = (*Client).tmiTwitchTvCommandUSERSTATE
+		return c.tmiTwitchTvCommandUSERSTATE(ircData)
 
-	// NOT HANDLED
+	// NOT RECOGNIZED
 	default:
-		ok = false
+		return ErrUnrecognizedIRCCommand
 	}
-
-	if f != nil {
-		return f, true
-	}
-	return f, ok
 }
 
-func jtvHandlers(cmd string) (func(*Client, IRCData) error, bool) {
-	var f func(*Client, IRCData) error
-	var ok bool
-
-	switch cmd {
+func (c *Client) jtvHandlers(ircData IRCData) error {
+	switch ircData.Command {
 	// UNIMPLEMENTED
 	case "MODE": // deprecated
-		ok = true
+		return ErrUnsetIRCCommand
 
 	// IMPLEMENTED
 	// nil
 
-	// NOT HANDLED
+	// NOT RECOGNIZED
 	default:
-		ok = false
+		return ErrUnrecognizedIRCCommand
 	}
-
-	if f != nil {
-		return f, true
-	}
-	return f, ok
 }
 
-func otherHandlers(cmd string) (func(*Client, IRCData) error, bool) {
-	var f func(*Client, IRCData) error
-	var ok bool
-
-	switch cmd {
+func (c *Client) otherHandlers(ircData IRCData) error {
+	switch ircData.Command {
 	// UNIMPLEMENTED
 	// 366 ; RPL_ENDOFNAMES RFC1459 ; end of NAMES
 	case "366":
-		ok = true
+		return ErrUnsetIRCCommand
 
 	// IMPLEMENTED
 	case "353": // RPL_NAMREPLY RFC1459 ; aka NAMES on twitch dev docs
-		f = (*Client).otherCommand353
+		return c.otherCommand353(ircData)
 	case "JOIN":
-		f = (*Client).otherCommandJOIN
+		return c.otherCommandJOIN(ircData)
 	case "PART":
-		f = (*Client).otherCommandPART
+		return c.otherCommandPART(ircData)
 	case "PING":
-		f = (*Client).otherCommandPING
+		return c.otherCommandPING(ircData)
 	case "PONG":
-		f = (*Client).otherCommandPONG
+		return c.otherCommandPONG(ircData)
 	case "PRIVMSG":
-		f = (*Client).otherCommandPRIVMSG
+		return c.otherCommandPRIVMSG(ircData)
 	case "WHISPER":
-		f = (*Client).otherCommandWHISPER
+		return c.otherCommandWHISPER(ircData)
 
-	// NOT HANDLED
+	// NOT RECOGNIZED
 	default:
-		ok = false
+		return ErrUnrecognizedIRCCommand
 	}
-
-	if f != nil {
-		return f, true
-	}
-	return f, ok
 }
 
 func (c *Client) tmiTwitchTvCommand001(ircData IRCData) error {

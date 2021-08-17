@@ -64,10 +64,10 @@ type IRCData struct {
 }
 
 type UnsetMessage struct {
-	Data    IRCData
-	IRCType string
-	Text    string
-	Type    MessageType
+	Data    IRCData     `json:"data"`
+	IRCType string      `json:"irc-type"`
+	Text    string      `json:"text"`
+	Type    MessageType `json:"type"`
 }
 
 // Timeout, ban, or clear all chat

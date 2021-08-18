@@ -222,15 +222,47 @@ func parseUser(tags IRCTags, prefix string) *User {
 		EmotesRaw:   tags["emotes"],
 	}
 
-	// TODO:
-	// Bits         int    // bits, err = strconv.Atoi(tags["bits"] if ok)
-	// Broadcaster  bool   // parse badges for Broadcaster badge
-	// Name         string // parse prefix, otherwise lowercase DisplayName
+	if bits, ok := tags["bits"]; ok {
+		if val, err := strconv.Atoi(bits); err == nil {
+			user.Bits = val
+		}
+	}
 
-	// Badges       []Badge // parseBadges(user.BadgesRaw)
+	if user.DisplayName != "" {
+		user.Name = strings.ToLower(user.DisplayName)
+	} else {
+		// parsePrefix
+	}
+
+	user.Badges = parseBadges(user.BadgesRaw)
+
+	if len(user.Badges) > 0 {
+		for _, badge := range user.Badges {
+			if badge.Name == "broadcaster" {
+				user.Broadcaster = true
+			}
+		}
+	}
+
+	// TODO:
 	// Emotes       []Emote	// parseEmotes(user.EmotesRaw)
 
 	return &user
+}
+
+func parseBadges(rawBadges string) []Badge {
+	var splBadges = strings.Split(rawBadges, ",")
+	var badges = make([]Badge, len(splBadges))
+
+	for i, badge := range splBadges {
+		var pair = strings.SplitN(badge, "/", 2)
+		badges[i].Name = pair[0]
+		if val, err := strconv.Atoi(pair[1]); err == nil {
+			badges[i].Value = val
+		}
+	}
+
+	return badges
 }
 
 func parseNoticeMessage(data IRCData) (NoticeMessage, error) {

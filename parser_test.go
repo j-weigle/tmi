@@ -269,3 +269,59 @@ func TestParseClearChatMessage(t *testing.T) {
 		}
 	}
 }
+
+func TestParseClearMsgMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want ClearMsgMessage
+	}{
+		{
+			"@login=ronni;target-msg-id=abc-123-def :tmi.twitch.tv CLEARMSG #dallas :HeyGuys",
+			ClearMsgMessage{
+				Channel:     "dallas",
+				IRCType:     "CLEARMSG",
+				Text:        "HeyGuys",
+				Type:        CLEARMSG,
+				Login:       "ronni",
+				TargetMsgID: "abc-123-def",
+			},
+		},
+		{
+			"@login=<login>;target-msg-id=<target-msg-id> :tmi.twitch.tv CLEARMSG #<channel> :<message>",
+			ClearMsgMessage{
+				Channel:     "<channel>",
+				IRCType:     "CLEARMSG",
+				Text:        "<message>",
+				Type:        CLEARMSG,
+				Login:       "<login>",
+				TargetMsgID: "<target-msg-id>",
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseClearMsgMessage(ircData)
+
+		if got.Channel != test.want.Channel {
+			t.Errorf("Channel: got %v, want %v", got.Channel, test.want.Channel)
+		}
+		if got.IRCType != test.want.IRCType {
+			t.Errorf("IRCType: got %v, want %v", got.IRCType, test.want.IRCType)
+		}
+		if got.Text != test.want.Text {
+			t.Errorf("Text: got %v, want %v", got.Text, test.want.Text)
+		}
+		if got.Type != test.want.Type {
+			t.Errorf("Type: got %v, want %v", got.Type, test.want.Type)
+		}
+		if got.Login != test.want.Login {
+			t.Errorf("Login: got %v, want %v", got.Login, test.want.Login)
+		}
+		if got.TargetMsgID != test.want.TargetMsgID {
+			t.Errorf("TargetMsgID: got %v, want %v", got.TargetMsgID, test.want.TargetMsgID)
+		}
+	}
+}

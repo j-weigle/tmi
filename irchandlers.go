@@ -44,7 +44,11 @@ func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
 		return nil
 
 	case "CLEARMSG":
-		return c.tmiTwitchTvCommandCLEARMSG(ircData)
+		if c.handlers.onClearMsgMessage != nil {
+			var clearMsgMessage = parseClearMsgMessage(ircData)
+			c.handlers.onClearMsgMessage(clearMsgMessage)
+		}
+		return nil
 
 	case "GLOBALUSERSTATE":
 		return c.tmiTwitchTvCommandGLOBALUSERSTATE(ircData)
@@ -139,8 +143,8 @@ func (c *Client) otherHandlers(ircData IRCData) error {
 	}
 }
 
-func (c *Client) tmiTwitchTvCommandCLEARMSG(ircData IRCData) error {
-	fmt.Println("Got CLEARMSG")
+func (c *Client) tmiTwitchTvCommandGLOBALUSERSTATE(ircData IRCData) error {
+	fmt.Println("Got GLOBALUSERSTATE")
 	return nil
 }
 func (c *Client) tmiTwitchTvCommandHOSTTARGET(ircData IRCData) error {
@@ -161,10 +165,6 @@ func (c *Client) tmiTwitchTvCommandUSERNOTICE(ircData IRCData) error {
 }
 func (c *Client) tmiTwitchTvCommandUSERSTATE(ircData IRCData) error {
 	fmt.Println("Got USERSTATE")
-	return nil
-}
-func (c *Client) tmiTwitchTvCommandGLOBALUSERSTATE(ircData IRCData) error {
-	fmt.Println("Got GLOBALUSERSTATE")
 	return nil
 }
 

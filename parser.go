@@ -168,6 +168,24 @@ func parseClearChatMessage(data IRCData) ClearChatMessage {
 	return clearChatMessage
 }
 
+func parseClearMsgMessage(data IRCData) ClearMsgMessage {
+	var clearMsgMessage = ClearMsgMessage{
+		Data:        data,
+		IRCType:     data.Command,
+		Type:        CLEARMSG,
+		Login:       data.Tags["login"],
+		TargetMsgID: data.Tags["target-msg-id"],
+	}
+
+	clearMsgMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
+
+	if len(data.Params) == 2 {
+		clearMsgMessage.Text = data.Params[1]
+	}
+
+	return clearMsgMessage
+}
+
 func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 	var noticeMessage = NoticeMessage{
 		Data:    data,

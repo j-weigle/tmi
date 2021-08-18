@@ -222,7 +222,7 @@ type PrivmsgMessage struct {
 	Type    MessageType `json:"type"`
 
 	Action bool   `json:"action"` // indicates if the /me command was used
-	MsgID  string `json:"msg-id"` // tags["id"]
+	MsgID  string `json:"id"`     // tags["id"]
 	User   *User  `json:"user"`   // user that sent the message
 }
 
@@ -251,26 +251,26 @@ type Emote struct {
 }
 
 type EmotePosition struct {
-	End   int `json:"end"`
-	Start int `json:"start"`
+	EndIdx   int `json:"end-index"`
+	StartIdx int `json:"start-index"`
 }
 
 type User struct {
-	BadgeInfo   string  `json:"badgeinfo"`
+	BadgeInfo   string  `json:"badge-info"`
 	Badges      []Badge `json:"badges"`
 	Bits        int     `json:"bits"`
 	Broadcaster bool    `json:"broadcaster"`
 	Color       string  `json:"color"`
-	DisplayName string  `json:"displayname"`
+	DisplayName string  `json:"display-name"`
 	Emotes      []Emote `json:"emotes"`
 	Mod         bool    `json:"mod"`
 	Name        string  `json:"name"`
 	RoomID      string  `json:"roomid"`
 	Subscriber  bool    `json:"subscriber"`
-	TmiSentTs   string  `json:"tmisentts"`
+	TmiSentTs   string  `json:"tmi-sent-ts"`
 	Turbo       bool    `json:"turbo"`
-	UserID      string  `json:"userid"`
-	UserType    string  `json:"usertype"`
-	BadgesRaw   string  `json:"badgesraw"`
-	EmotesRaw   string  `json:"emotesraw"`
+	UserID      string  `json:"user-id"`
+	UserType    string  `json:"user-type"`
+	BadgesRaw   string  `json:"badges-raw"`
+	EmotesRaw   string  `json:"emotes-raw"`
 }

@@ -221,8 +221,9 @@ type PrivmsgMessage struct {
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
-	Action bool  `json:"action"` // indicates if the /me command was used
-	User   *User `json:"user"`   // user that sent the message
+	Action bool   `json:"action"` // indicates if the /me command was used
+	MsgID  string `json:"msg-id"` // tags["id"]
+	User   *User  `json:"user"`   // user that sent the message
 }
 
 type WhisperMessage struct {
@@ -232,9 +233,10 @@ type WhisperMessage struct {
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
-	Action bool   `json:"action"` // indicates if the /me command was used
-	Target string `json:"target"` // message recipient
-	User   *User  `json:"user"`   // message sender
+	Action bool   `json:"action"`     // indicates if the /me command was used
+	MsgID  string `json:"message-id"` // tags["message-id"]
+	Target string `json:"target"`     // message recipient
+	User   *User  `json:"user"`       // message sender
 }
 
 type Badge struct {
@@ -254,24 +256,21 @@ type EmotePosition struct {
 }
 
 type User struct {
-	BadgeInfo    string  `json:"badgeinfo"`
-	Badges       []Badge `json:"badges"`
-	Bits         int     `json:"bits"`
-	Broadcaster  bool    `json:"broadcaster"`
-	Color        string  `json:"color"`
-	DisplayName  string  `json:"displayname"`
-	Emotes       []Emote `json:"emotes"`
-	Flags        string  `json:"flags"`
-	ID           string  `json:"id"`
-	Mod          bool    `json:"mod"`
-	Name         string  `json:"name"`
-	RoomID       string  `json:"roomid"`
-	Subscriber   bool    `json:"subscriber"`
-	TmiSentTs    string  `json:"tmisentts"`
-	Turbo        bool    `json:"turbo"`
-	UserID       string  `json:"userid"`
-	UserType     string  `json:"usertype"`
-	BadgeInfoRaw string  `json:"badgeinforaw"`
-	BadgesRaw    string  `json:"badgesraw"`
-	EmotesRaw    string  `json:"emotesraw"`
+	BadgeInfo   string  `json:"badgeinfo"`
+	Badges      []Badge `json:"badges"`
+	Bits        int     `json:"bits"`
+	Broadcaster bool    `json:"broadcaster"`
+	Color       string  `json:"color"`
+	DisplayName string  `json:"displayname"`
+	Emotes      []Emote `json:"emotes"`
+	Mod         bool    `json:"mod"`
+	Name        string  `json:"name"`
+	RoomID      string  `json:"roomid"`
+	Subscriber  bool    `json:"subscriber"`
+	TmiSentTs   string  `json:"tmisentts"`
+	Turbo       bool    `json:"turbo"`
+	UserID      string  `json:"userid"`
+	UserType    string  `json:"usertype"`
+	BadgesRaw   string  `json:"badgesraw"`
+	EmotesRaw   string  `json:"emotesraw"`
 }

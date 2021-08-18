@@ -186,6 +186,53 @@ func parseClearMsgMessage(data IRCData) ClearMsgMessage {
 	return clearMsgMessage
 }
 
+func parseGlobalUserstateMessage(data IRCData) GlobalUserstateMessage {
+	var globalUserstateMessage = GlobalUserstateMessage{
+		Data:      data,
+		IRCType:   data.Command,
+		Type:      GLOBALUSERSTATE,
+		EmoteSets: parseEmoteSets(data.Tags),
+		User:      parseUser(data.Tags, data.Prefix),
+	}
+
+	return globalUserstateMessage
+}
+
+func parseEmoteSets(tags IRCTags) []string {
+	if sets, ok := tags["emote-sets"]; ok {
+		return strings.Split(sets, ",")
+	} else {
+		return []string{}
+	}
+}
+
+func parseUser(tags IRCTags, prefix string) *User {
+	var user = User{
+		BadgeInfo:   tags["badge-info"],
+		Color:       tags["color"],
+		DisplayName: tags["display-name"],
+		Mod:         tags["mod"] == "1",
+		RoomID:      tags["room-id"],
+		Subscriber:  tags["subscriber"] == "1",
+		TmiSentTs:   tags["tmi-sent-ts"],
+		Turbo:       tags["turbo"] == "1",
+		UserID:      tags["user-id"],
+		UserType:    tags["user-type"],
+		BadgesRaw:   tags["badges"],
+		EmotesRaw:   tags["emotes"],
+	}
+
+	// TODO:
+	// Bits         int    // bits, err = strconv.Atoi(tags["bits"] if ok)
+	// Broadcaster  bool   // parse badges for Broadcaster badge
+	// Name         string // parse prefix, otherwise lowercase DisplayName
+
+	// Badges       []Badge // parseBadges(user.BadgesRaw)
+	// Emotes       []Emote	// parseEmotes(user.EmotesRaw)
+
+	return &user
+}
+
 func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 	var noticeMessage = NoticeMessage{
 		Data:    data,

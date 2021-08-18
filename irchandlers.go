@@ -37,9 +37,8 @@ func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
 		return nil
 
 	case "CLEARCHAT":
-		var clearChatMessage = parseClearChatMessage(ircData)
-
 		if c.handlers.onClearChatMessage != nil {
+			var clearChatMessage = parseClearChatMessage(ircData)
 			c.handlers.onClearChatMessage(clearChatMessage)
 		}
 		return nil

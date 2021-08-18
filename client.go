@@ -125,8 +125,8 @@ func (c *Client) disconnect() {
 func (c *Client) handleMessage(rawMessage string) error {
 	var ircData, errParseIRC = parseIRCMessage(rawMessage)
 	var parseUnset = func() error {
-		var unsetMessage = parseUnsetMessage(ircData)
 		if c.handlers.onUnsetMessage != nil {
+			var unsetMessage = parseUnsetMessage(ircData)
 			c.handlers.onUnsetMessage(unsetMessage)
 		}
 		return nil

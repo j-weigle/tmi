@@ -192,7 +192,7 @@ func parseGlobalUserstateMessage(data IRCData) GlobalUserstateMessage {
 		IRCType:   data.Command,
 		Type:      GLOBALUSERSTATE,
 		EmoteSets: parseEmoteSets(data.Tags),
-		User:      parseUser(data.Tags, data.Prefix, ""),
+		User:      parseUser(data.Tags, data.Prefix),
 	}
 
 	return globalUserstateMessage
@@ -206,7 +206,7 @@ func parseEmoteSets(tags IRCTags) []string {
 	}
 }
 
-func parseUser(tags IRCTags, prefix, message string) *User {
+func parseUser(tags IRCTags, prefix string) *User {
 	var user = User{
 		BadgeInfo:   tags["badge-info"],
 		Color:       tags["color"],
@@ -219,7 +219,6 @@ func parseUser(tags IRCTags, prefix, message string) *User {
 		UserID:      tags["user-id"],
 		UserType:    tags["user-type"],
 		BadgesRaw:   tags["badges"],
-		EmotesRaw:   tags["emotes"],
 	}
 
 	if bits, ok := tags["bits"]; ok {
@@ -244,8 +243,6 @@ func parseUser(tags IRCTags, prefix, message string) *User {
 			}
 		}
 	}
-
-	user.Emotes = parseEmotes(user.EmotesRaw, message)
 
 	return &user
 }

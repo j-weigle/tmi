@@ -26,23 +26,56 @@ func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
 
 	// IMPLEMENTED
 	case "001": // RPL_WELCOME        RFC2812 ; "Welcome, GLHF"
-		return c.tmiTwitchTvCommand001(ircData)
+		c.connected.set(true)
+		go c.onConnectedJoins()
+		// successful connection, reset the reconnect counter
+		c.reconnectCounter = 0
+
+		if c.handlers.onConnected != nil {
+			c.handlers.onConnected()
+		}
+		return nil
+
 	case "CLEARCHAT":
-		return c.tmiTwitchTvCommandCLEARCHAT(ircData)
+		var clearChatMessage = parseClearChatMessage(ircData)
+
+		if c.handlers.onClearChatMessage != nil {
+			c.handlers.onClearChatMessage(clearChatMessage)
+		}
+		return nil
+
 	case "CLEARMSG":
 		return c.tmiTwitchTvCommandCLEARMSG(ircData)
+
 	case "GLOBALUSERSTATE":
 		return c.tmiTwitchTvCommandGLOBALUSERSTATE(ircData)
+
 	case "HOSTTARGET":
 		return c.tmiTwitchTvCommandHOSTTARGET(ircData)
+
 	case "NOTICE":
-		return c.tmiTwitchTvCommandNOTICE(ircData)
+		var err error
+		var noticeMessage, parseErr = parseNoticeMessage(ircData)
+		if parseErr != nil {
+			c.warnUser(parseErr)
+			if noticeMessage.MsgID == "login_failure" {
+				err = ErrLoginFailure
+			}
+		}
+		if c.handlers.onNoticeMessage != nil {
+			c.handlers.onNoticeMessage(noticeMessage)
+		}
+		return err
+
 	case "RECONNECT":
 		return c.tmiTwitchTvCommandRECONNECT(ircData)
+
 	case "ROOMSTATE":
 		return c.tmiTwitchTvCommandROOMSTATE(ircData)
+
 	case "USERNOTICE":
 		return c.tmiTwitchTvCommandUSERNOTICE(ircData)
+
 	case "USERSTATE":
 		return c.tmiTwitchTvCommandUSERSTATE(ircData)
 
@@ -77,16 +110,27 @@ func (c *Client) otherHandlers(ircData IRCData) error {
 	// IMPLEMENTED
 	case "353": // RPL_NAMREPLY RFC1459 ; aka NAMES on twitch dev docs
 		return c.otherCommand353(ircData)
+
 	case "JOIN":
 		return c.otherCommandJOIN(ircData)
+
 	case "PART":
 		return c.otherCommandPART(ircData)
+
 	case "PING":
-		return c.otherCommandPING(ircData)
+		c.send("PONG :tmi.twitch.tv")
+		return nil
+
 	case "PONG":
-		return c.otherCommandPONG(ircData)
+		select {
+		case c.rcvdPong <- struct{}{}:
+		default:
+		}
+		return nil
+
 	case "PRIVMSG":
 		return c.otherCommandPRIVMSG(ircData)
+
 	case "WHISPER":
 		return c.otherCommandWHISPER(ircData)
 
@@ -96,21 +140,6 @@ func (c *Client) otherHandlers(ircData IRCData) error {
 	}
 }
 
-func (c *Client) tmiTwitchTvCommand001(ircData IRCData) error {
-	c.connected.set(true)
-	go c.onConnectedJoins()
-	// successful connection, reset the reconnect counter
-	c.reconnectCounter = 0
-
-	if c.handlers.onConnected != nil {
-		c.handlers.onConnected()
-	}
-	return nil
-}
-func (c *Client) tmiTwitchTvCommandCLEARCHAT(ircData IRCData) error {
-	fmt.Println("Got CLEARCHAT")
-	return nil
-}
 func (c *Client) tmiTwitchTvCommandCLEARMSG(ircData IRCData) error {
 	fmt.Println("Got CLEARMSG")
 	return nil
@@ -118,20 +147,6 @@ func (c *Client) tmiTwitchTvCommandCLEARMSG(ircData IRCData) error {
 func (c *Client) tmiTwitchTvCommandHOSTTARGET(ircData IRCData) error {
 	fmt.Println("Got HOSTTARGET")
 	return nil
-}
-func (c *Client) tmiTwitchTvCommandNOTICE(ircData IRCData) error {
-	var err error
-	var noticeMessage, parseErr = parseNoticeMessage(ircData)
-	if parseErr != nil {
-		c.warnUser(parseErr)
-		if noticeMessage.MsgID == "login_failure" {
-			err = ErrLoginFailure
-		}
-	}
-	if c.handlers.onNoticeMessage != nil {
-		c.handlers.onNoticeMessage(noticeMessage)
-	}
-	return err
 }
 func (c *Client) tmiTwitchTvCommandRECONNECT(ircData IRCData) error {
 	fmt.Println("Got RECONNECT")
@@ -164,17 +179,6 @@ func (c *Client) otherCommandJOIN(ircData IRCData) error {
 }
 func (c *Client) otherCommandPART(ircData IRCData) error {
 	fmt.Println("Got PART")
-	return nil
-}
-func (c *Client) otherCommandPING(ircData IRCData) error {
-	c.send("PONG :tmi.twitch.tv")
-	return nil
-}
-func (c *Client) otherCommandPONG(ircData IRCData) error {
-	select {
-	case c.rcvdPong <- struct{}{}:
-	default:
-	}
 	return nil
 }
 func (c *Client) otherCommandPRIVMSG(ircData IRCData) error {

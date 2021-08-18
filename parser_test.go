@@ -2,6 +2,7 @@ package tmi
 
 import (
 	"testing"
+	"time"
 )
 
 func (d1 *IRCData) equals(d2 *IRCData) bool {
@@ -187,6 +188,84 @@ func TestEscapeIRCTagValues(t *testing.T) {
 	for _, v := range tests {
 		if testTags[v.key] != v.want {
 			t.Errorf("got: %v, want: %v\n", testTags[v.key], v.want)
+		}
+	}
+}
+
+func TestParseClearChatMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want ClearChatMessage
+	}{
+		{
+			"@ban-duration=150;room-id=71092938;target-user-id=48215771;tmi-sent-ts=1568505600739 :tmi.twitch.tv CLEARCHAT #bobby :onche",
+			ClearChatMessage{
+				Channel:     "bobby",
+				IRCType:     "CLEARCHAT",
+				Text:        "onche timed out for 150 seconds in bobby",
+				Type:        CLEARCHAT,
+				BanDuration: time.Second * 150,
+				Target:      "onche",
+			},
+		},
+		{
+			"@ban-duration=10;room-id=71092938;target-user-id=53211996;tmi-sent-ts=1568505608390 :tmi.twitch.tv CLEARCHAT #xqcow :haru_exc",
+			ClearChatMessage{
+				Channel:     "xqcow",
+				IRCType:     "CLEARCHAT",
+				Text:        "haru_exc timed out for 10 seconds in xqcow",
+				Type:        CLEARCHAT,
+				BanDuration: time.Second * 10,
+				Target:      "haru_exc",
+			},
+		},
+		{
+			"@room-id=71092938;target-user-id=462385855;tmi-sent-ts=1568505916367 :tmi.twitch.tv CLEARCHAT #apocalypse :xmukkk",
+			ClearChatMessage{
+				Channel:     "apocalypse",
+				IRCType:     "CLEARCHAT",
+				Text:        "xmukkk was permanently banned in apocalypse",
+				Type:        CLEARCHAT,
+				BanDuration: -1,
+				Target:      "xmukkk",
+			},
+		},
+		{
+			"@room-id=1234567;tmi-sent-ts=1234567 :tmi.twitch.tv CLEARCHAT #twitch",
+			ClearChatMessage{
+				Channel:     "twitch",
+				IRCType:     "CLEARCHAT",
+				Text:        "chat cleared in twitch",
+				Type:        CLEARCHAT,
+				BanDuration: -1,
+				Target:      "",
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseClearChatMessage(ircData)
+
+		if got.Channel != test.want.Channel {
+			t.Errorf("Channel: got %v, want %v", got.Channel, test.want.Channel)
+		}
+		if got.IRCType != test.want.IRCType {
+			t.Errorf("IRCType: got %v, want %v", got.IRCType, test.want.IRCType)
+		}
+		if got.Text != test.want.Text {
+			t.Errorf("Text: got %v, want %v", got.Text, test.want.Text)
+		}
+		if got.Type != test.want.Type {
+			t.Errorf("Type: got %v, want %v", got.Type, test.want.Type)
+		}
+		if got.BanDuration != test.want.BanDuration {
+			t.Errorf("BanDuration: got %v, want %v", got.BanDuration, test.want.BanDuration)
+		}
+		if got.Target != test.want.Target {
+			t.Errorf("Target: got %v, want %v", got.Target, test.want.Target)
 		}
 	}
 }

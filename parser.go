@@ -2,7 +2,9 @@ package tmi
 
 import (
 	"errors"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func (tags IRCTags) EscapeIRCTagValues() {
@@ -105,29 +107,81 @@ func parseTags(rawTags string) IRCTags {
 	return tags
 }
 
-func parseUnsetMessage(ircData IRCData) (UnsetMessage, error) {
+func parseUnsetMessage(ircData IRCData) UnsetMessage {
 	return UnsetMessage{
 		Data:    ircData,
 		IRCType: ircData.Command,
 		Text:    ircData.Raw,
 		Type:    UNSET,
-	}, nil
+	}
 }
 
-func parseNoticeMessage(ircData IRCData) (NoticeMessage, error) {
+func parseClearChatMessage(data IRCData) ClearChatMessage {
+	var clearChatMessage = ClearChatMessage{
+		Data:    data,
+		IRCType: data.Command,
+		Type:    CLEARCHAT,
+	}
+
+	var bAlloc int // for growing string builder
+
+	clearChatMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
+	bAlloc += len(clearChatMessage.Channel)
+
+	if len(data.Params) == 2 {
+		bAlloc += 27 // " was permanently banned in " or " timed out for {banDuration} seconds in "
+
+		clearChatMessage.Target = data.Params[1]
+		bAlloc += len(clearChatMessage.Target)
+
+		if banDuration, ok := data.Tags["ban-duration"]; ok {
+			bAlloc += len(banDuration)
+			if duration, err := strconv.Atoi(banDuration); err == nil {
+				clearChatMessage.BanDuration = time.Duration(duration) * time.Second
+			}
+		} else {
+			clearChatMessage.BanDuration = -1
+		}
+	} else {
+		bAlloc += 16 // "chat cleared in "
+		clearChatMessage.BanDuration = -1
+	}
+
+	var b strings.Builder
+	b.Grow(bAlloc)
+
+	if clearChatMessage.Target == "" {
+		b.WriteString("chat cleared in ")
+	} else {
+		b.WriteString(clearChatMessage.Target)
+		if clearChatMessage.BanDuration < 0 {
+			b.WriteString(" was permanently banned in ")
+		} else {
+			b.WriteString(" timed out for ")
+			b.WriteString(data.Tags["ban-duration"])
+			b.WriteString(" seconds in ")
+		}
+	}
+	b.WriteString(clearChatMessage.Channel)
+	clearChatMessage.Text = b.String()
+
+	return clearChatMessage
+}
+
+func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 	var noticeMessage = NoticeMessage{
-		Data:    ircData,
-		IRCType: ircData.Command,
+		Data:    data,
+		IRCType: data.Command,
 		Notice:  "notice",
 		Type:    NOTICE,
 	}
-	noticeMessage.Channel = strings.TrimPrefix(ircData.Params[0], "#")
+	noticeMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
 	var msg string
-	if len(ircData.Params) == 2 {
-		msg = ircData.Params[1]
+	if len(data.Params) == 2 {
+		msg = data.Params[1]
 		noticeMessage.Text = msg
 	}
-	if msgId, ok := ircData.Tags["msg-id"]; ok {
+	if msgId, ok := data.Tags["msg-id"]; ok {
 		noticeMessage.MsgID = msgId
 
 		switch msgId {
@@ -217,7 +271,7 @@ func parseNoticeMessage(ircData IRCData) (NoticeMessage, error) {
 			}
 		}
 		noticeMessage.MsgID = "parse_error"
-		return noticeMessage, errors.New("could not properly parse NOTICE:\n" + ircData.Raw)
+		return noticeMessage, errors.New("could not properly parse NOTICE:\n" + data.Raw)
 	}
 
 	return noticeMessage, nil

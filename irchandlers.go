@@ -51,7 +51,11 @@ func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
 		return nil
 
 	case "GLOBALUSERSTATE":
-		return c.tmiTwitchTvCommandGLOBALUSERSTATE(ircData)
+		if c.handlers.onGlobalUserstateMessage != nil {
+			var globalUserstateMessage = parseGlobalUserstateMessage(ircData)
+			c.handlers.onGlobalUserstateMessage(globalUserstateMessage)
+		}
+		return nil
 
 	case "HOSTTARGET":
 		return c.tmiTwitchTvCommandHOSTTARGET(ircData)
@@ -143,10 +147,6 @@ func (c *Client) otherHandlers(ircData IRCData) error {
 	}
 }
 
-func (c *Client) tmiTwitchTvCommandGLOBALUSERSTATE(ircData IRCData) error {
-	fmt.Println("Got GLOBALUSERSTATE")
-	return nil
-}
 func (c *Client) tmiTwitchTvCommandHOSTTARGET(ircData IRCData) error {
 	fmt.Println("Got HOSTTARGET")
 	return nil

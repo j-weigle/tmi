@@ -198,6 +198,115 @@ func parseGlobalUserstateMessage(data IRCData) GlobalUserstateMessage {
 	return globalUserstateMessage
 }
 
+func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
+	var noticeMessage = NoticeMessage{
+		Data:    data,
+		IRCType: data.Command,
+		Notice:  "notice",
+		Type:    NOTICE,
+	}
+	noticeMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
+	var msg string
+	if len(data.Params) == 2 {
+		msg = data.Params[1]
+		noticeMessage.Text = msg
+	}
+	if msgId, ok := data.Tags["msg-id"]; ok {
+		noticeMessage.MsgID = msgId
+
+		switch msgId {
+		// Automod
+		case "msg_rejected",
+			"msg_rejected_mandatory":
+			noticeMessage.Notice = "automod"
+
+		// Emote only mode on/off
+		case "emote_only_off":
+			noticeMessage.Notice = "emoteonly"
+			noticeMessage.Enabled = false
+		case "emote_only_on":
+			noticeMessage.Notice = "emoteonly"
+			noticeMessage.Enabled = true
+
+		// Moderators of the channel, or none
+		case "no_mods":
+			noticeMessage.Notice = "mods"
+		case "room_mods":
+			noticeMessage.Notice = "mods"
+			noticeMessage.Mods = []string{}
+			var modStr = msg
+			var mods = strings.Split(strings.ToLower(strings.Split(modStr, ": ")[1]), ", ")
+			for _, v := range mods {
+				if v != "" {
+					noticeMessage.Mods = append(noticeMessage.Mods, v)
+				}
+			}
+
+		// r9k (uniquechat) mode on/off
+		case "r9k_off":
+			noticeMessage.Notice = "uniquechat"
+			noticeMessage.Enabled = false
+		case "r9k_on":
+			noticeMessage.Notice = "uniquechat"
+			noticeMessage.Enabled = true
+
+		// Subscribers only mode on/off
+		case "subs_off":
+			noticeMessage.Notice = "subonly"
+			noticeMessage.Enabled = false
+		case "subs_on":
+			noticeMessage.Notice = "subonly"
+			noticeMessage.Enabled = true
+
+		// VIPs of the channel, or none
+		case "no_vips":
+			noticeMessage.Notice = "vips"
+		case "vips_success":
+			noticeMessage.Notice = "vips"
+			noticeMessage.VIPs = []string{}
+			var vipStr = msg
+			vipStr = strings.TrimSuffix(vipStr, ".")
+			var vips = strings.Split(strings.ToLower(strings.Split(vipStr, ": ")[1]), ", ")
+			for _, v := range vips {
+				if v != "" {
+					noticeMessage.VIPs = append(noticeMessage.VIPs, v)
+				}
+			}
+
+		// Listen for ROOMSTATE followers notice instead (includes delay)
+		case "followers_off":
+		case "followers_on":
+		case "followers_onzero":
+
+		// Listen for HOSTTARGET instead
+		case "host_off":
+		case "host_on":
+
+		// Listen for ROOMSTATE slowmode notice instead (includes delay)
+		case "slow_off":
+		case "slow_on":
+		}
+	} else {
+		loginFailures := []string{
+			"Login unsuccessful",
+			"Login authentication failed",
+			"Error logging in",
+			"Improperly formatted auth",
+			"Invalid NICK",
+		}
+		for _, failure := range loginFailures {
+			if strings.Contains(msg, failure) {
+				noticeMessage.MsgID = "login_failure"
+				return noticeMessage, errors.New(msg)
+			}
+		}
+		noticeMessage.MsgID = "parse_error"
+		return noticeMessage, errors.New("could not properly parse NOTICE:\n" + data.Raw)
+	}
+
+	return noticeMessage, nil
+}
+
 func parseEmoteSets(tags IRCTags) []string {
 	if sets, ok := tags["emote-sets"]; ok {
 		return strings.Split(sets, ",")
@@ -338,113 +447,4 @@ func parseBadges(rawBadges string) []Badge {
 	}
 
 	return badges
-}
-
-func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
-	var noticeMessage = NoticeMessage{
-		Data:    data,
-		IRCType: data.Command,
-		Notice:  "notice",
-		Type:    NOTICE,
-	}
-	noticeMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
-	var msg string
-	if len(data.Params) == 2 {
-		msg = data.Params[1]
-		noticeMessage.Text = msg
-	}
-	if msgId, ok := data.Tags["msg-id"]; ok {
-		noticeMessage.MsgID = msgId
-
-		switch msgId {
-		// Automod
-		case "msg_rejected",
-			"msg_rejected_mandatory":
-			noticeMessage.Notice = "automod"
-
-		// Emote only mode on/off
-		case "emote_only_off":
-			noticeMessage.Notice = "emoteonly"
-			noticeMessage.Enabled = false
-		case "emote_only_on":
-			noticeMessage.Notice = "emoteonly"
-			noticeMessage.Enabled = true
-
-		// Moderators of the channel, or none
-		case "no_mods":
-			noticeMessage.Notice = "mods"
-		case "room_mods":
-			noticeMessage.Notice = "mods"
-			noticeMessage.Mods = []string{}
-			var modStr = msg
-			var mods = strings.Split(strings.ToLower(strings.Split(modStr, ": ")[1]), ", ")
-			for _, v := range mods {
-				if v != "" {
-					noticeMessage.Mods = append(noticeMessage.Mods, v)
-				}
-			}
-
-		// r9k (uniquechat) mode on/off
-		case "r9k_off":
-			noticeMessage.Notice = "uniquechat"
-			noticeMessage.Enabled = false
-		case "r9k_on":
-			noticeMessage.Notice = "uniquechat"
-			noticeMessage.Enabled = true
-
-		// Subscribers only mode on/off
-		case "subs_off":
-			noticeMessage.Notice = "subonly"
-			noticeMessage.Enabled = false
-		case "subs_on":
-			noticeMessage.Notice = "subonly"
-			noticeMessage.Enabled = true
-
-		// VIPs of the channel, or none
-		case "no_vips":
-			noticeMessage.Notice = "vips"
-		case "vips_success":
-			noticeMessage.Notice = "vips"
-			noticeMessage.VIPs = []string{}
-			var vipStr = msg
-			vipStr = strings.TrimSuffix(vipStr, ".")
-			var vips = strings.Split(strings.ToLower(strings.Split(vipStr, ": ")[1]), ", ")
-			for _, v := range vips {
-				if v != "" {
-					noticeMessage.VIPs = append(noticeMessage.VIPs, v)
-				}
-			}
-
-		// Listen for ROOMSTATE followers notice instead (includes delay)
-		case "followers_off":
-		case "followers_on":
-		case "followers_onzero":
-
-		// Listen for HOSTTARGET instead
-		case "host_off":
-		case "host_on":
-
-		// Listen for ROOMSTATE slowmode notice instead (includes delay)
-		case "slow_off":
-		case "slow_on":
-		}
-	} else {
-		loginFailures := []string{
-			"Login unsuccessful",
-			"Login authentication failed",
-			"Error logging in",
-			"Improperly formatted auth",
-			"Invalid NICK",
-		}
-		for _, failure := range loginFailures {
-			if strings.Contains(msg, failure) {
-				noticeMessage.MsgID = "login_failure"
-				return noticeMessage, errors.New(msg)
-			}
-		}
-		noticeMessage.MsgID = "parse_error"
-		return noticeMessage, errors.New("could not properly parse NOTICE:\n" + data.Raw)
-	}
-
-	return noticeMessage, nil
 }

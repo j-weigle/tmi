@@ -307,14 +307,6 @@ func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 	return noticeMessage, nil
 }
 
-func parseEmoteSets(tags IRCTags) []string {
-	if sets, ok := tags["emote-sets"]; ok {
-		return strings.Split(sets, ",")
-	} else {
-		return []string{}
-	}
-}
-
 func parseUser(tags IRCTags, prefix string) *User {
 	var user = User{
 		BadgeInfo:   tags["badge-info"],
@@ -363,6 +355,27 @@ func parseUser(tags IRCTags, prefix string) *User {
 	}
 
 	return &user
+}
+
+func parseBadges(rawBadges string) []Badge {
+	var badges []Badge
+	if rawBadges == "" {
+		return badges
+	}
+
+	var splBadges = strings.Split(rawBadges, ",")
+
+	for _, b := range splBadges {
+		var pair = strings.SplitN(b, "/", 2)
+		var badge Badge
+		badge.Name = pair[0]
+		if val, err := strconv.Atoi(pair[1]); err == nil {
+			badge.Value = val
+		}
+		badges = append(badges, badge)
+	}
+
+	return badges
 }
 
 func parseEmotes(rawEmotes, message string) []Emote {
@@ -428,23 +441,10 @@ parseLoop:
 	return emotes
 }
 
-func parseBadges(rawBadges string) []Badge {
-	var badges []Badge
-	if rawBadges == "" {
-		return badges
+func parseEmoteSets(tags IRCTags) []string {
+	if sets, ok := tags["emote-sets"]; ok {
+		return strings.Split(sets, ",")
+	} else {
+		return []string{}
 	}
-
-	var splBadges = strings.Split(rawBadges, ",")
-
-	for _, b := range splBadges {
-		var pair = strings.SplitN(b, "/", 2)
-		var badge Badge
-		badge.Name = pair[0]
-		if val, err := strconv.Atoi(pair[1]); err == nil {
-			badge.Value = val
-		}
-		badges = append(badges, badge)
-	}
-
-	return badges
 }

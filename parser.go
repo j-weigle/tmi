@@ -187,15 +187,13 @@ func parseClearMsgMessage(data IRCData) ClearMsgMessage {
 }
 
 func parseGlobalUserstateMessage(data IRCData) GlobalUserstateMessage {
-	var globalUserstateMessage = GlobalUserstateMessage{
+	return GlobalUserstateMessage{
 		Data:      data,
 		IRCType:   data.Command,
 		Type:      GLOBALUSERSTATE,
 		EmoteSets: parseEmoteSets(data.Tags),
 		User:      parseUser(data.Tags, data.Prefix),
 	}
-
-	return globalUserstateMessage
 }
 
 func parseHostTargetMessage(data IRCData) HostTargetMessage {

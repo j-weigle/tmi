@@ -10,8 +10,8 @@ var (
 	ErrUnsetIRCCommand        = errors.New("unset IRC Command")
 )
 
-func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
-	switch ircData.Command {
+func (c *Client) tmiTwitchTvHandlers(data IRCData) error {
+	switch data.Command {
 	// UNIMPLEMENTED
 	// 002 ; RPL_YOURHOST  RFC2812 ; "Your host is tmi.twitch.tv"
 	// 003 ; RPL_CREATED   RFC2812 ; "This server is rather new"
@@ -38,35 +38,31 @@ func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
 
 	case "CLEARCHAT":
 		if c.handlers.onClearChatMessage != nil {
-			var clearChatMessage = parseClearChatMessage(ircData)
-			c.handlers.onClearChatMessage(clearChatMessage)
+			c.handlers.onClearChatMessage(parseClearChatMessage(data))
 		}
 		return nil
 
 	case "CLEARMSG":
 		if c.handlers.onClearMsgMessage != nil {
-			var clearMsgMessage = parseClearMsgMessage(ircData)
-			c.handlers.onClearMsgMessage(clearMsgMessage)
+			c.handlers.onClearMsgMessage(parseClearMsgMessage(data))
 		}
 		return nil
 
 	case "GLOBALUSERSTATE":
 		if c.handlers.onGlobalUserstateMessage != nil {
-			var globalUserstateMessage = parseGlobalUserstateMessage(ircData)
-			c.handlers.onGlobalUserstateMessage(globalUserstateMessage)
+			c.handlers.onGlobalUserstateMessage(parseGlobalUserstateMessage(data))
 		}
 		return nil
 
 	case "HOSTTARGET":
 		if c.handlers.onHostTargetMessage != nil {
-			var hostTargetMessage = parseHostTargetMessage(ircData)
-			c.handlers.onHostTargetMessage(hostTargetMessage)
+			c.handlers.onHostTargetMessage(parseHostTargetMessage(data))
 		}
 		return nil
 
 	case "NOTICE":
 		var err error
-		var noticeMessage, parseErr = parseNoticeMessage(ircData)
+		var noticeMessage, parseErr = parseNoticeMessage(data)
 		if parseErr != nil {
 			c.warnUser(parseErr)
 			if noticeMessage.MsgID == "login_failure" {
@@ -80,19 +76,18 @@ func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
 
 	case "RECONNECT":
 		if c.handlers.onReconnectMessage != nil {
-			var reconnectMessage = parseReconnectMessage(ircData)
-			c.handlers.onReconnectMessage(reconnectMessage)
+			c.handlers.onReconnectMessage(parseReconnectMessage(data))
 		}
 		return errReconnect
 
 	case "ROOMSTATE":
-		return c.tmiTwitchTvCommandROOMSTATE(ircData)
+		return c.tmiTwitchTvCommandROOMSTATE(data)
 
 	case "USERNOTICE":
-		return c.tmiTwitchTvCommandUSERNOTICE(ircData)
+		return c.tmiTwitchTvCommandUSERNOTICE(data)
 
 	case "USERSTATE":
-		return c.tmiTwitchTvCommandUSERSTATE(ircData)
+		return c.tmiTwitchTvCommandUSERSTATE(data)
 
 	// NOT RECOGNIZED
 	default:
@@ -100,8 +95,8 @@ func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
 	}
 }
 
-func (c *Client) jtvHandlers(ircData IRCData) error {
-	switch ircData.Command {
+func (c *Client) jtvHandlers(data IRCData) error {
+	switch data.Command {
 	// UNIMPLEMENTED
 	case "MODE": // deprecated
 		return ErrUnsetIRCCommand
@@ -115,8 +110,8 @@ func (c *Client) jtvHandlers(ircData IRCData) error {
 	}
 }
 
-func (c *Client) otherHandlers(ircData IRCData) error {
-	switch ircData.Command {
+func (c *Client) otherHandlers(data IRCData) error {
+	switch data.Command {
 	// UNIMPLEMENTED
 	// 366 ; RPL_ENDOFNAMES RFC1459 ; end of NAMES
 	case "366":
@@ -124,13 +119,13 @@ func (c *Client) otherHandlers(ircData IRCData) error {
 
 	// IMPLEMENTED
 	case "353": // RPL_NAMREPLY RFC1459 ; aka NAMES on twitch dev docs
-		return c.otherCommand353(ircData)
+		return c.otherCommand353(data)
 
 	case "JOIN":
-		return c.otherCommandJOIN(ircData)
+		return c.otherCommandJOIN(data)
 
 	case "PART":
-		return c.otherCommandPART(ircData)
+		return c.otherCommandPART(data)
 
 	case "PING":
 		c.send("PONG :tmi.twitch.tv")
@@ -144,10 +139,10 @@ func (c *Client) otherHandlers(ircData IRCData) error {
 		return nil
 
 	case "PRIVMSG":
-		return c.otherCommandPRIVMSG(ircData)
+		return c.otherCommandPRIVMSG(data)
 
 	case "WHISPER":
-		return c.otherCommandWHISPER(ircData)
+		return c.otherCommandWHISPER(data)
 
 	// NOT RECOGNIZED
 	default:

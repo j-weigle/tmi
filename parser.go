@@ -230,17 +230,26 @@ func parseUser(tags IRCTags, prefix string) *User {
 	if user.DisplayName != "" {
 		user.Name = strings.ToLower(user.DisplayName)
 	} else {
-		// TODO:
-		// parsePrefix
+		if prefix != "" {
+			var spl = strings.Split(prefix, "!")
+			if len(spl) == 2 {
+				user.Name = spl[0]
+			} else {
+				spl = strings.Split(prefix, "@")
+				if len(spl) == 2 {
+					user.Name = spl[0]
+				}
+			}
+		}
 	}
 
 	user.Badges = parseBadges(user.BadgesRaw)
-
-	if len(user.Badges) > 0 {
-		for _, badge := range user.Badges {
-			if badge.Name == "broadcaster" {
-				user.Broadcaster = true
-			}
+	for _, badge := range user.Badges {
+		if badge.Name == "broadcaster" {
+			user.Broadcaster = true
+		}
+		if badge.Name == "vip" {
+			user.VIP = true
 		}
 	}
 

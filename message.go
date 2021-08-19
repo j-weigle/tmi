@@ -276,5 +276,6 @@ type User struct {
 	Turbo       bool    `json:"turbo"`
 	UserID      string  `json:"user-id"`
 	UserType    string  `json:"user-type"`
+	VIP         bool    `json:"vip"`
 	BadgesRaw   string  `json:"badges-raw"`
 }

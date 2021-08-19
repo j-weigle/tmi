@@ -29,6 +29,14 @@ func (tags IRCTags) EscapeIRCTagValues() {
 	}
 }
 
+func ParseTimeStamp(unixTime string) time.Time {
+	var i, err = strconv.ParseInt(unixTime, 10, 64)
+	if err != nil {
+		return time.Time{}
+	}
+	return time.Unix(0, i*int64(time.Millisecond))
+}
+
 func parseIRCMessage(message string) (IRCData, error) {
 	ircData := IRCData{
 		Raw:    message,

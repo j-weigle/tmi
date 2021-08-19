@@ -58,7 +58,11 @@ func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
 		return nil
 
 	case "HOSTTARGET":
-		return c.tmiTwitchTvCommandHOSTTARGET(ircData)
+		if c.handlers.onHostTargetMessage != nil {
+			var hostTargetMessage = parseHostTargetMessage(ircData)
+			c.handlers.onHostTargetMessage(hostTargetMessage)
+		}
+		return nil
 
 	case "NOTICE":
 		var err error
@@ -147,10 +151,6 @@ func (c *Client) otherHandlers(ircData IRCData) error {
 	}
 }
 
-func (c *Client) tmiTwitchTvCommandHOSTTARGET(ircData IRCData) error {
-	fmt.Println("Got HOSTTARGET")
-	return nil
-}
 func (c *Client) tmiTwitchTvCommandRECONNECT(ircData IRCData) error {
 	fmt.Println("Got RECONNECT")
 	return nil

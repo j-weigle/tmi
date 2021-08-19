@@ -108,7 +108,7 @@ type HostTargetMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
-	Text    string      `json:"text"` // "<channel> began hosting <hosted>" or "<channel> exited host mode"
+	Text    string      `json:"text"` // "<channel> is now hosting <hosted>" or "<channel> exited host mode"
 	Type    MessageType `json:"type"`
 
 	Hosted  string `json:"hosted"`  // the channel that was hosted by channel

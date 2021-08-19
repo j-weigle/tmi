@@ -198,6 +198,58 @@ func parseGlobalUserstateMessage(data IRCData) GlobalUserstateMessage {
 	return globalUserstateMessage
 }
 
+func parseHostTargetMessage(data IRCData) HostTargetMessage {
+	var hostTargetMessage = HostTargetMessage{
+		Data:    data,
+		IRCType: data.Command,
+		Type:    HOSTTARGET,
+	}
+
+	var bAlloc int // for growing string builder
+
+	hostTargetMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
+	bAlloc += len(hostTargetMessage.Channel)
+
+	var viewers string
+	if len(data.Params) == 2 {
+		var fields = strings.Fields(data.Params[1])
+		if fields[0] == "-" {
+			bAlloc += 17 // " exited host mode"
+		} else {
+			hostTargetMessage.Hosted = fields[0]
+			bAlloc += len(hostTargetMessage.Hosted) // " is now hosting {hosted}"
+
+			if len(fields) == 2 {
+				viewers = fields[1]
+				if v, err := strconv.Atoi(viewers); err == nil {
+					hostTargetMessage.Viewers = v
+				}
+				bAlloc += len(viewers) + 13 // " for {viewers} viewers"
+			}
+		}
+	}
+
+	var b strings.Builder
+	b.Grow(bAlloc)
+
+	b.WriteString(hostTargetMessage.Channel)
+	if hostTargetMessage.Hosted != "" {
+		b.WriteString(" is now hosting ")
+		b.WriteString(hostTargetMessage.Hosted)
+
+		if viewers != "" {
+			b.WriteString(" for ")
+			b.WriteString(viewers)
+			b.WriteString(" viewers")
+		}
+	} else {
+		b.WriteString(" exited host mode")
+	}
+	hostTargetMessage.Text = b.String()
+
+	return hostTargetMessage
+}
+
 func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 	var noticeMessage = NoticeMessage{
 		Data:    data,

@@ -144,6 +144,7 @@ func (c *Client) handleMessage(rawMessage string) error {
 		}
 		if err == ErrUnrecognizedIRCCommand {
 			c.warnUser(errors.New("unrecognized message with tmi.twitch.tv prefix:\n" + rawMessage))
+			return nil
 		}
 		return err
 	case "jtv":
@@ -153,6 +154,7 @@ func (c *Client) handleMessage(rawMessage string) error {
 		}
 		if err == ErrUnrecognizedIRCCommand {
 			c.warnUser(errors.New("unrecognized message with jtv prefix:\n" + rawMessage))
+			return nil
 		}
 		return err
 	default:
@@ -162,6 +164,7 @@ func (c *Client) handleMessage(rawMessage string) error {
 		}
 		if err == ErrUnrecognizedIRCCommand {
 			c.warnUser(errors.New("unrecognized message with { " + ircData.Prefix + " } prefix:\n" + rawMessage))
+			return nil
 		}
 		return err
 	}

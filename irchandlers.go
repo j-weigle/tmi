@@ -79,7 +79,11 @@ func (c *Client) tmiTwitchTvHandlers(ircData IRCData) error {
 		return err
 
 	case "RECONNECT":
-		return c.tmiTwitchTvCommandRECONNECT(ircData)
+		if c.handlers.onReconnectMessage != nil {
+			var reconnectMessage = parseReconnectMessage(ircData)
+			c.handlers.onReconnectMessage(reconnectMessage)
+		}
+		return errReconnect
 
 	case "ROOMSTATE":
 		return c.tmiTwitchTvCommandROOMSTATE(ircData)
@@ -151,10 +155,6 @@ func (c *Client) otherHandlers(ircData IRCData) error {
 	}
 }
 
-func (c *Client) tmiTwitchTvCommandRECONNECT(ircData IRCData) error {
-	fmt.Println("Got RECONNECT")
-	return nil
-}
 func (c *Client) tmiTwitchTvCommandROOMSTATE(ircData IRCData) error {
 	fmt.Println("Got ROOMSTATE")
 	return nil

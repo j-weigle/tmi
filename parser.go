@@ -359,6 +359,14 @@ func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 	return noticeMessage, nil
 }
 
+func parseReconnectMessage(data IRCData) ReconnectMessage {
+	return ReconnectMessage{
+		Data:    data,
+		IRCType: data.Command,
+		Type:    RECONNECT,
+	}
+}
+
 func parseUser(tags IRCTags, prefix string) *User {
 	var user = User{
 		BadgeInfo:   tags["badge-info"],

@@ -365,15 +365,60 @@ func parseReconnectMessage(data IRCData) ReconnectMessage {
 	}
 }
 
+func parseRoomstateMessage(data IRCData) RoomstateMessage {
+	var roomstateMessage = RoomstateMessage{
+		Data:    data,
+		IRCType: data.Command,
+		Type:    ROOMSTATE,
+		States:  make(map[string]RoomState),
+	}
+	roomstateMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
+
+	var modeTags = [6]string{
+		"emote-only",
+		"followers-only",
+		"r9k",
+		"rituals",
+		"slow",
+		"subs-only"}
+	for _, tag := range modeTags {
+		if v, ok := data.Tags[tag]; ok {
+			var roomstate = RoomState{}
+			if val, err := strconv.Atoi(v); err == nil {
+				switch tag {
+				case "followers-only":
+					switch val {
+					case -1:
+					case 0:
+						roomstate.Enabled = true
+					default:
+						roomstate.Enabled = true
+						roomstate.Delay = time.Duration(val) * time.Minute
+					}
+				case "slow":
+					if val != 0 {
+						roomstate.Enabled = true
+						roomstate.Delay = time.Duration(val) * time.Second
+					}
+				default:
+					roomstate.Enabled = val == 1
+				}
+			}
+
+			roomstateMessage.States[tag] = roomstate
+		}
+	}
+
+	return roomstateMessage
+}
+
 func parseUser(tags IRCTags, prefix string) *User {
 	var user = User{
 		BadgeInfo:   tags["badge-info"],
 		Color:       tags["color"],
 		DisplayName: tags["display-name"],
 		Mod:         tags["mod"] == "1",
-		RoomID:      tags["room-id"],
 		Subscriber:  tags["subscriber"] == "1",
-		TmiSentTs:   tags["tmi-sent-ts"],
 		Turbo:       tags["turbo"] == "1",
 		UserID:      tags["user-id"],
 		UserType:    tags["user-type"],

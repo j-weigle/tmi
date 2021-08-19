@@ -141,14 +141,13 @@ type RoomstateMessage struct {
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
-	States []RoomState `json:"states"`  // the states in the roomstate tags
-	RoomID string      `json:"room-id"` // channel ID
+	// emote-only, followers-only, r9k(uniquechat), slow(slowmode), subs-only
+	States map[string]RoomState `json:"states"` // the states in the roomstate tags
 }
 
 type RoomState struct { // note followers-only: -1 (disabled), 0 (enabled immediate chat), > 0 (enabled number of minutes delay to chat)
-	Mode    string `json:"mode"`    // emote-only, followers-only, uniquechat(r9k), slowmode(slow), subs-only
-	Enabled bool   `json:"enabled"` // mode turned on or off
-	Delay   int    `json:"delay"`   // seconds between messages (slow), minutes post-follow (followers-only)
+	Enabled bool          `json:"enabled"` // mode turned on or off
+	Delay   time.Duration `json:"delay"`   // seconds between messages (slow), minutes post-follow (followers-only)
 }
 
 type UsernoticeMessage struct {
@@ -270,9 +269,7 @@ type User struct {
 	DisplayName string  `json:"display-name"`
 	Mod         bool    `json:"mod"`
 	Name        string  `json:"name"`
-	RoomID      string  `json:"roomid"`
 	Subscriber  bool    `json:"subscriber"`
-	TmiSentTs   string  `json:"tmi-sent-ts"`
 	Turbo       bool    `json:"turbo"`
 	UserID      string  `json:"user-id"`
 	UserType    string  `json:"user-type"`

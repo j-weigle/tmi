@@ -194,13 +194,17 @@ func (c *Client) otherHandlers(data IRCData) error {
 		return nil
 
 	case "PING":
-		c.send("PONG :tmi.twitch.tv")
+		if len(data.Params) > 0 {
+			c.send("PONG :" + data.Params[0])
+		}
 		return nil
 
 	case "PONG":
-		select {
-		case c.rcvdPong <- struct{}{}:
-		default:
+		if data.Raw == "PONG :"+pingSignature {
+			select {
+			case c.rcvdPong <- struct{}{}:
+			default:
+			}
 		}
 		return nil
 

@@ -11,6 +11,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const pingSignature = "go-tmi-ws"
+
 type Client struct {
 	channels         map[string]bool
 	channelsMutex    sync.Mutex
@@ -103,7 +105,7 @@ func (c *Client) connect(u url.URL) error {
 	c.spawnWriter(ctx, wg, closeErrCb)
 
 	// Start the pinger in a separate goroutine.
-	// It will ping c.conn after it hasn't received a message for c.config.Pinger.wait.
+	// It will ping c.conn after it hasn't received a message for c.config.Pinger.interval.
 	c.spawnPinger(ctx, wg, closeErrCb)
 
 	// Block and wait for a Disconnect() call or a connection error.
@@ -217,7 +219,7 @@ func (c *Client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 				continue
 
 			case <-time.After(c.config.Pinger.interval):
-				c.send("PING :tmi.twitch.tv")
+				c.send("PING :" + pingSignature)
 
 				select {
 				case <-c.rcvdPong:

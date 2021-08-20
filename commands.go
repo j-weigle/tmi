@@ -160,25 +160,6 @@ func (c *Client) Say(channel string, message string) error {
 	return nil
 }
 
-func splitChatMessage(message string) []string {
-	const splIdx = 500
-	var messages []string
-
-	for len(message) >= splIdx {
-		var lastSpace = strings.LastIndex(message[:splIdx], " ")
-		if lastSpace == -1 {
-			lastSpace = splIdx
-		}
-		messages = append(messages, strings.TrimSpace(message[:lastSpace]))
-		message = strings.TrimSpace(message[lastSpace:])
-	}
-	if message != "" {
-		messages = append(messages, message)
-	}
-
-	return messages
-}
-
 // UpdatePassword updates the password the client uses for authentication.
 func (c *Client) UpdatePassword(password string) {
 	c.config.Identity.SetPassword(password)
@@ -237,4 +218,31 @@ func (c *Client) OnPrivateMessage(cb func(PrivateMessage)) {
 }
 func (c *Client) OnWhisperMessage(cb func(WhisperMessage)) {
 	c.handlers.onWhisperMessage = cb
+}
+
+func formatChannel(channel string) string {
+	channel = strings.TrimSpace(channel)
+	if !strings.HasPrefix(channel, "#") {
+		channel = "#" + channel
+	}
+	return strings.ToLower(channel)
+}
+
+func splitChatMessage(message string) []string {
+	const splIdx = 500
+	var messages []string
+
+	for len(message) >= splIdx {
+		var lastSpace = strings.LastIndex(message[:splIdx], " ")
+		if lastSpace == -1 {
+			lastSpace = splIdx
+		}
+		messages = append(messages, strings.TrimSpace(message[:lastSpace]))
+		message = strings.TrimSpace(message[lastSpace:])
+	}
+	if message != "" {
+		messages = append(messages, message)
+	}
+
+	return messages
 }

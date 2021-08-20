@@ -701,11 +701,3 @@ func parseEmoteSets(tags IRCTags) []string {
 		return []string{}
 	}
 }
-
-func formatChannel(channel string) string {
-	channel = strings.TrimSpace(channel)
-	if !strings.HasPrefix(channel, "#") {
-		channel = "#" + channel
-	}
-	return strings.ToLower(channel)
-}

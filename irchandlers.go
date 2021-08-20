@@ -87,7 +87,10 @@ func (c *Client) tmiTwitchTvHandlers(data IRCData) error {
 		return nil
 
 	case "USERNOTICE":
-		return c.tmiTwitchTvCommandUSERNOTICE(data)
+		if c.handlers.onUserNoticeMessage != nil {
+			c.handlers.onUserNoticeMessage(parseUsernoticeMessage(data))
+		}
+		return nil
 
 	case "USERSTATE":
 		return c.tmiTwitchTvCommandUSERSTATE(data)
@@ -153,10 +156,6 @@ func (c *Client) otherHandlers(data IRCData) error {
 	}
 }
 
-func (c *Client) tmiTwitchTvCommandUSERNOTICE(ircData IRCData) error {
-	fmt.Println("Got USERNOTICE")
-	return nil
-}
 func (c *Client) tmiTwitchTvCommandUSERSTATE(ircData IRCData) error {
 	fmt.Println("Got USERSTATE")
 	return nil

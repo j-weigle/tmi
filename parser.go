@@ -420,6 +420,32 @@ func parseRoomstateMessage(data IRCData) RoomstateMessage {
 	return roomstateMessage
 }
 
+func parseUsernoticeMessage(data IRCData) UsernoticeMessage {
+	var usernoticeMessage = UsernoticeMessage{
+		Data:      data,
+		IRCType:   data.Command,
+		Type:      USERNOTICE,
+		MsgParams: make(IRCTags),
+		SystemMsg: data.Tags["system-msg"],
+		User:      parseUser(data.Tags, data.Prefix),
+	}
+	usernoticeMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
+
+	if len(data.Params) == 2 {
+		usernoticeMessage.Text = data.Params[1]
+	}
+
+	usernoticeMessage.Emotes = parseEmotes(data.Tags["emotes"], usernoticeMessage.Text)
+
+	for t, v := range data.Tags {
+		if strings.HasPrefix(t, "msg-param") {
+			usernoticeMessage.MsgParams[t] = v
+		}
+	}
+
+	return usernoticeMessage
+}
+
 func parseUser(tags IRCTags, prefix string) *User {
 	var user = User{
 		BadgeInfo:   tags["badge-info"],
@@ -430,7 +456,6 @@ func parseUser(tags IRCTags, prefix string) *User {
 		Turbo:       tags["turbo"] == "1",
 		UserID:      tags["user-id"],
 		UserType:    tags["user-type"],
-		BadgesRaw:   tags["badges"],
 	}
 
 	if bits, ok := tags["bits"]; ok {
@@ -441,21 +466,21 @@ func parseUser(tags IRCTags, prefix string) *User {
 
 	if user.DisplayName != "" {
 		user.Name = strings.ToLower(user.DisplayName)
-	} else {
-		if prefix != "" {
-			var spl = strings.Split(prefix, "!")
+	} else if name, ok := tags["login"]; ok {
+		user.Name = name
+	} else if prefix != "" {
+		var spl = strings.Split(prefix, "!")
+		if len(spl) == 2 {
+			user.Name = spl[0]
+		} else {
+			spl = strings.Split(prefix, "@")
 			if len(spl) == 2 {
 				user.Name = spl[0]
-			} else {
-				spl = strings.Split(prefix, "@")
-				if len(spl) == 2 {
-					user.Name = spl[0]
-				}
 			}
 		}
 	}
 
-	user.Badges = parseBadges(user.BadgesRaw)
+	user.Badges = parseBadges(tags["badges"])
 	for _, badge := range user.Badges {
 		if badge.Name == "broadcaster" {
 			user.Broadcaster = true

@@ -157,11 +157,10 @@ type UsernoticeMessage struct {
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
-	Emotes    []Emote           `json:"emotes"`     // parsed emotes string
-	EmotesRaw string            `json:"emotes-raw"` // raw string of tags["emotes"]
-	MsgParams map[string]string `json:"msg-params"` // any msg-param tags for the notice
-	SystemMsg string            `json:"system-msg"` // message printed in chat on the notice
-	User      *User             `json:"user"`       // user who caused the notice
+	Emotes    []Emote `json:"emotes"`     // parsed emotes string
+	MsgParams IRCTags `json:"msg-params"` // any msg-param tags for the notice
+	SystemMsg string  `json:"system-msg"` // message printed in chat on the notice
+	User      *User   `json:"user"`       // user who caused the notice
 }
 
 type UserstateMessage struct {
@@ -222,11 +221,10 @@ type PrivmsgMessage struct {
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
-	Action    bool    `json:"action"`     // indicates if the /me command was used
-	Emotes    []Emote `json:"emotes"`     // parsed emotes string
-	EmotesRaw string  `json:"emotes-raw"` // raw string of tags["emotes"]
-	MsgID     string  `json:"id"`         // tags["id"]
-	User      *User   `json:"user"`       // user that sent the message
+	Action bool    `json:"action"` // indicates if the /me command was used
+	Emotes []Emote `json:"emotes"` // parsed emotes string
+	MsgID  string  `json:"id"`     // tags["id"]
+	User   *User   `json:"user"`   // user that sent the message
 }
 
 type WhisperMessage struct {
@@ -236,12 +234,11 @@ type WhisperMessage struct {
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
-	Action    bool    `json:"action"`     // indicates if the /me command was used
-	Emotes    []Emote `json:"emotes"`     // parsed emotes string
-	EmotesRaw string  `json:"emotes-raw"` // raw string of tags["emotes"]
-	MsgID     string  `json:"message-id"` // tags["message-id"]
-	Target    string  `json:"target"`     // message recipient
-	User      *User   `json:"user"`       // message sender
+	Action bool    `json:"action"`     // indicates if the /me command was used
+	Emotes []Emote `json:"emotes"`     // parsed emotes string
+	MsgID  string  `json:"message-id"` // tags["message-id"]
+	Target string  `json:"target"`     // message recipient
+	User   *User   `json:"user"`       // message sender
 }
 
 type Badge struct {
@@ -274,5 +271,4 @@ type User struct {
 	UserID      string  `json:"user-id"`
 	UserType    string  `json:"user-type"`
 	VIP         bool    `json:"vip"`
-	BadgesRaw   string  `json:"badges-raw"`
 }

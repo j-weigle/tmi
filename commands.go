@@ -42,18 +42,12 @@ func (c *Client) Connect() error {
 
 		switch err {
 		case errReconnect:
-			var overflowPoint = 64 // technically 63, but using i - 1
-
-			if maxReconnectAttempts == 0 {
-				err = errors.New("max reconnect attempts was 0")
-				c.callDone(err)
-				return err
-			}
+			const overflowPoint = 64 // technically 63, but using i - 1
 
 			var i int = c.reconnectCounter
 			c.reconnectCounter++
-
-			if c.reconnectCounter < 0 { // in case of overflow, reset to overflow point in order to maintain max interval
+			// in case of overflow, reset to overflow point in order to maintain max interval
+			if c.reconnectCounter < 0 {
 				c.reconnectCounter = overflowPoint
 			}
 
@@ -65,9 +59,9 @@ func (c *Client) Connect() error {
 
 			var sleepDuration time.Duration
 			if i == 0 {
-				sleepDuration = 0
+				continue // immediate reconnect on first attempt
 			} else if i > 0 && i < overflowPoint {
-				// i - 1 to compensate for initial reconnect attempt being 0
+				// i - 1 because math.Pow(2, 0) == 1
 				sleepDuration = time.Duration(math.Pow(2, float64(i-1)))
 			} else {
 				sleepDuration = maxReconnectInterval
@@ -78,7 +72,7 @@ func (c *Client) Connect() error {
 			}
 
 			time.Sleep(sleepDuration)
-			continue
+
 		default:
 			c.callDone(err)
 			return err
@@ -133,23 +127,27 @@ func (c *Client) OnErr(cb func(error)) {
 	c.onError = cb
 }
 
-// Part leaves channel.
-func (c *Client) Part(channel string) error {
-	if channel == "" {
-		return errors.New("channel was empty")
-	}
-	channel = strings.ToLower(channel)
-	if !strings.HasPrefix(channel, "#") {
-		channel = "#" + channel
+// Part leaves channels.
+func (c *Client) Part(channels ...string) error {
+	if channels == nil || len(channels) < 1 {
+		return errors.New("channels was empty or nil")
 	}
 
-	if c.connected.get() {
-		c.send("PART " + channel)
+	for _, channel := range channels {
+		channel = strings.ToLower(channel)
+		if !strings.HasPrefix(channel, "#") {
+			channel = "#" + channel
+		}
+
+		if c.connected.get() {
+			c.send("PART " + channel)
+		}
+
+		c.channelsMutex.Lock()
+		delete(c.channels, channel)
+		c.channelsMutex.Unlock()
 	}
 
-	c.channelsMutex.Lock()
-	delete(c.channels, channel)
-	c.channelsMutex.Unlock()
 	return nil
 }
 

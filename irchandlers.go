@@ -135,10 +135,16 @@ func (c *Client) otherHandlers(data IRCData) error {
 		return nil
 
 	case "JOIN":
-		return c.otherCommandJOIN(data)
+		if c.handlers.onJoinMessage != nil {
+			c.handlers.onJoinMessage(parseJoinMessage(data))
+		}
+		return nil
 
 	case "PART":
-		return c.otherCommandPART(data)
+		if c.handlers.onPartMessage != nil {
+			c.handlers.onPartMessage(parsePartMessage(data))
+		}
+		return nil
 
 	case "PING":
 		c.send("PONG :tmi.twitch.tv")
@@ -163,14 +169,6 @@ func (c *Client) otherHandlers(data IRCData) error {
 	}
 }
 
-func (c *Client) otherCommandJOIN(ircData IRCData) error {
-	fmt.Println("Got JOIN")
-	return nil
-}
-func (c *Client) otherCommandPART(ircData IRCData) error {
-	fmt.Println("Got PART")
-	return nil
-}
 func (c *Client) otherCommandPRIVMSG(ircData IRCData) error {
 	fmt.Println("Got PRIVMSG")
 	return nil

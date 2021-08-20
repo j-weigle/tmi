@@ -471,6 +471,26 @@ func parseNamesMessage(data IRCData) NamesMessage {
 	return namesMessage
 }
 
+func parseJoinMessage(data IRCData) JoinMessage {
+	return JoinMessage{
+		Channel:  strings.TrimPrefix(data.Params[0], "#"),
+		Data:     data,
+		IRCType:  data.Command,
+		Type:     JOIN,
+		Username: parseUsernameFromPrefix(data.Prefix),
+	}
+}
+
+func parsePartMessage(data IRCData) PartMessage {
+	return PartMessage{
+		Channel:  strings.TrimPrefix(data.Params[0], "#"),
+		Data:     data,
+		IRCType:  data.Command,
+		Type:     PART,
+		Username: parseUsernameFromPrefix(data.Prefix),
+	}
+}
+
 func parseUser(tags IRCTags, prefix string) *User {
 	var user = User{
 		BadgeInfo:   tags["badge-info"],
@@ -493,16 +513,8 @@ func parseUser(tags IRCTags, prefix string) *User {
 		user.Name = strings.ToLower(user.DisplayName)
 	} else if name, ok := tags["login"]; ok {
 		user.Name = name
-	} else if prefix != "" {
-		var spl = strings.Split(prefix, "!")
-		if len(spl) == 2 {
-			user.Name = spl[0]
-		} else {
-			spl = strings.Split(prefix, "@")
-			if len(spl) == 2 {
-				user.Name = spl[0]
-			}
-		}
+	} else {
+		user.Name = parseUsernameFromPrefix(prefix)
 	}
 
 	user.Badges = parseBadges(tags["badges"])
@@ -516,6 +528,22 @@ func parseUser(tags IRCTags, prefix string) *User {
 	}
 
 	return &user
+}
+
+func parseUsernameFromPrefix(prefix string) string {
+	var username string
+	if prefix != "" {
+		var spl = strings.Split(prefix, "!")
+		if len(spl) == 2 {
+			username = spl[0]
+		} else {
+			spl = strings.Split(prefix, "@")
+			if len(spl) == 2 {
+				username = spl[0]
+			}
+		}
+	}
+	return username
 }
 
 func parseBadges(rawBadges string) []Badge {

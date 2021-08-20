@@ -93,7 +93,10 @@ func (c *Client) tmiTwitchTvHandlers(data IRCData) error {
 		return nil
 
 	case "USERSTATE":
-		return c.tmiTwitchTvCommandUSERSTATE(data)
+		if c.handlers.onUserstateMessage != nil {
+			c.handlers.onUserstateMessage(parseUserstateMessage(data))
+		}
+		return nil
 
 	// NOT RECOGNIZED
 	default:
@@ -154,11 +157,6 @@ func (c *Client) otherHandlers(data IRCData) error {
 	default:
 		return ErrUnrecognizedIRCCommand
 	}
-}
-
-func (c *Client) tmiTwitchTvCommandUSERSTATE(ircData IRCData) error {
-	fmt.Println("Got USERSTATE")
-	return nil
 }
 
 func (c *Client) otherCommand353(ircData IRCData) error {

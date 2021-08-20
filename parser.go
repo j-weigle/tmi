@@ -126,15 +126,14 @@ func parseUnsetMessage(ircData IRCData) UnsetMessage {
 
 func parseClearChatMessage(data IRCData) ClearChatMessage {
 	var clearChatMessage = ClearChatMessage{
+		Channel: strings.TrimPrefix(data.Params[0], "#"),
 		Data:    data,
 		IRCType: data.Command,
 		Type:    CLEARCHAT,
 	}
 
-	var bAlloc int // for growing string builder
-
-	clearChatMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
-	bAlloc += len(clearChatMessage.Channel)
+	// for growing string builder
+	var bAlloc = len(clearChatMessage.Channel)
 
 	if len(data.Params) == 2 {
 		bAlloc += 27 // " was permanently banned in " or " timed out for {banDuration} seconds in "
@@ -178,14 +177,13 @@ func parseClearChatMessage(data IRCData) ClearChatMessage {
 
 func parseClearMsgMessage(data IRCData) ClearMsgMessage {
 	var clearMsgMessage = ClearMsgMessage{
+		Channel:     strings.TrimPrefix(data.Params[0], "#"),
 		Data:        data,
 		IRCType:     data.Command,
 		Type:        CLEARMSG,
 		Login:       data.Tags["login"],
 		TargetMsgID: data.Tags["target-msg-id"],
 	}
-
-	clearMsgMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
 
 	if len(data.Params) == 2 {
 		clearMsgMessage.Text = data.Params[1]
@@ -206,15 +204,13 @@ func parseGlobalUserstateMessage(data IRCData) GlobalUserstateMessage {
 
 func parseHostTargetMessage(data IRCData) HostTargetMessage {
 	var hostTargetMessage = HostTargetMessage{
+		Channel: strings.TrimPrefix(data.Params[0], "#"),
 		Data:    data,
 		IRCType: data.Command,
 		Type:    HOSTTARGET,
 	}
-
-	var bAlloc int // for growing string builder
-
-	hostTargetMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
-	bAlloc += len(hostTargetMessage.Channel)
+	// for growing string builder
+	var bAlloc = len(hostTargetMessage.Channel)
 
 	var viewers string
 	if len(data.Params) == 2 {
@@ -258,17 +254,19 @@ func parseHostTargetMessage(data IRCData) HostTargetMessage {
 
 func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 	var noticeMessage = NoticeMessage{
+		Channel: strings.TrimPrefix(data.Params[0], "#"),
 		Data:    data,
 		IRCType: data.Command,
 		Notice:  "notice",
 		Type:    NOTICE,
 	}
-	noticeMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
+
 	var msg string
 	if len(data.Params) == 2 {
 		msg = data.Params[1]
 		noticeMessage.Text = msg
 	}
+
 	if msgId, ok := data.Tags["msg-id"]; ok {
 		noticeMessage.MsgID = msgId
 
@@ -375,12 +373,12 @@ func parseReconnectMessage(data IRCData) ReconnectMessage {
 
 func parseRoomstateMessage(data IRCData) RoomstateMessage {
 	var roomstateMessage = RoomstateMessage{
+		Channel: strings.TrimPrefix(data.Params[0], "#"),
 		Data:    data,
 		IRCType: data.Command,
 		Type:    ROOMSTATE,
 		States:  make(map[string]RoomState),
 	}
-	roomstateMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
 
 	var modeTags = [6]string{
 		"emote-only",
@@ -422,6 +420,7 @@ func parseRoomstateMessage(data IRCData) RoomstateMessage {
 
 func parseUsernoticeMessage(data IRCData) UsernoticeMessage {
 	var usernoticeMessage = UsernoticeMessage{
+		Channel:   strings.TrimPrefix(data.Params[0], "#"),
 		Data:      data,
 		IRCType:   data.Command,
 		Type:      USERNOTICE,
@@ -429,7 +428,6 @@ func parseUsernoticeMessage(data IRCData) UsernoticeMessage {
 		SystemMsg: data.Tags["system-msg"],
 		User:      parseUser(data.Tags, data.Prefix),
 	}
-	usernoticeMessage.Channel = strings.TrimPrefix(data.Params[0], "#")
 
 	if len(data.Params) == 2 {
 		usernoticeMessage.Text = data.Params[1]
@@ -444,6 +442,17 @@ func parseUsernoticeMessage(data IRCData) UsernoticeMessage {
 	}
 
 	return usernoticeMessage
+}
+
+func parseUserstateMessage(data IRCData) UserstateMessage {
+	return UserstateMessage{
+		Channel:   strings.TrimPrefix(data.Params[0], "#"),
+		Data:      data,
+		IRCType:   data.Command,
+		Type:      USERSTATE,
+		EmoteSets: parseEmoteSets(data.Tags),
+		User:      parseUser(data.Tags, data.Prefix),
+	}
 }
 
 func parseUser(tags IRCTags, prefix string) *User {

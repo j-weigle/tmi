@@ -137,7 +137,7 @@ func parseUnsetMessage(ircData IRCData) UnsetMessage {
 
 func parseClearChatMessage(data IRCData) ClearChatMessage {
 	var clearChatMessage = ClearChatMessage{
-		Channel: strings.TrimPrefix(data.Params[0], "#"),
+		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Type:    CLEARCHAT,
@@ -188,7 +188,7 @@ func parseClearChatMessage(data IRCData) ClearChatMessage {
 
 func parseClearMsgMessage(data IRCData) ClearMsgMessage {
 	var clearMsgMessage = ClearMsgMessage{
-		Channel:     strings.TrimPrefix(data.Params[0], "#"),
+		Channel:     data.Params[0],
 		Data:        data,
 		IRCType:     data.Command,
 		Type:        CLEARMSG,
@@ -215,7 +215,7 @@ func parseGlobalUserstateMessage(data IRCData) GlobalUserstateMessage {
 
 func parseHostTargetMessage(data IRCData) HostTargetMessage {
 	var hostTargetMessage = HostTargetMessage{
-		Channel: strings.TrimPrefix(data.Params[0], "#"),
+		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Type:    HOSTTARGET,
@@ -265,7 +265,7 @@ func parseHostTargetMessage(data IRCData) HostTargetMessage {
 
 func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 	var noticeMessage = NoticeMessage{
-		Channel: strings.TrimPrefix(data.Params[0], "#"),
+		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Notice:  "notice",
@@ -384,7 +384,7 @@ func parseReconnectMessage(data IRCData) ReconnectMessage {
 
 func parseRoomstateMessage(data IRCData) RoomstateMessage {
 	var roomstateMessage = RoomstateMessage{
-		Channel: strings.TrimPrefix(data.Params[0], "#"),
+		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Type:    ROOMSTATE,
@@ -431,7 +431,7 @@ func parseRoomstateMessage(data IRCData) RoomstateMessage {
 
 func parseUsernoticeMessage(data IRCData) UsernoticeMessage {
 	var usernoticeMessage = UsernoticeMessage{
-		Channel:   strings.TrimPrefix(data.Params[0], "#"),
+		Channel:   data.Params[0],
 		Data:      data,
 		IRCType:   data.Command,
 		Type:      USERNOTICE,
@@ -457,7 +457,7 @@ func parseUsernoticeMessage(data IRCData) UsernoticeMessage {
 
 func parseUserstateMessage(data IRCData) UserstateMessage {
 	return UserstateMessage{
-		Channel:   strings.TrimPrefix(data.Params[0], "#"),
+		Channel:   data.Params[0],
 		Data:      data,
 		IRCType:   data.Command,
 		Type:      USERSTATE,
@@ -475,7 +475,7 @@ func parseNamesMessage(data IRCData) NamesMessage {
 	}
 
 	if len(data.Params) == 4 {
-		namesMessage.Channel = strings.TrimPrefix(data.Params[2], "#")
+		namesMessage.Channel = data.Params[2]
 		namesMessage.Users = strings.Fields(data.Params[3])
 	}
 
@@ -484,7 +484,7 @@ func parseNamesMessage(data IRCData) NamesMessage {
 
 func parseJoinMessage(data IRCData) JoinMessage {
 	return JoinMessage{
-		Channel:  strings.TrimPrefix(data.Params[0], "#"),
+		Channel:  data.Params[0],
 		Data:     data,
 		IRCType:  data.Command,
 		Type:     JOIN,
@@ -494,7 +494,7 @@ func parseJoinMessage(data IRCData) JoinMessage {
 
 func parsePartMessage(data IRCData) PartMessage {
 	return PartMessage{
-		Channel:  strings.TrimPrefix(data.Params[0], "#"),
+		Channel:  data.Params[0],
 		Data:     data,
 		IRCType:  data.Command,
 		Type:     PART,
@@ -504,7 +504,7 @@ func parsePartMessage(data IRCData) PartMessage {
 
 func parsePrivateMessage(data IRCData) PrivateMessage {
 	var privateMessage = PrivateMessage{
-		Channel: strings.TrimPrefix(data.Params[0], "#"),
+		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Type:    PRIVMSG,

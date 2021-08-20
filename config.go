@@ -21,9 +21,8 @@ type connectionConfig struct {
 }
 
 type identityConfig struct {
-	anonymous bool   // if logging in anonymously
-	username  string // login account name
-	password  string // oauth token
+	username string // login account name
+	password string // oauth token
 }
 
 type pingConfig struct {
@@ -100,7 +99,6 @@ func (id *identityConfig) SetPassword(password string) {
 func (id *identityConfig) Anonymous() {
 	id.username = "justinfan" + fmt.Sprint(rand.Intn(79000)+1000)
 	id.password = "swordfish"
-	id.anonymous = true
 }
 
 // SetUsername sets the username for the identity configuration to username.

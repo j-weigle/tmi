@@ -200,7 +200,7 @@ func TestParseClearChatMessage(t *testing.T) {
 		{
 			"@ban-duration=150;room-id=71092938;target-user-id=48215771;tmi-sent-ts=1568505600739 :tmi.twitch.tv CLEARCHAT #bobby :onche",
 			ClearChatMessage{
-				Channel:     "bobby",
+				Channel:     "#bobby",
 				IRCType:     "CLEARCHAT",
 				Text:        "onche timed out for 150 seconds in bobby",
 				Type:        CLEARCHAT,
@@ -211,7 +211,7 @@ func TestParseClearChatMessage(t *testing.T) {
 		{
 			"@ban-duration=10;room-id=71092938;target-user-id=53211996;tmi-sent-ts=1568505608390 :tmi.twitch.tv CLEARCHAT #xqcow :haru_exc",
 			ClearChatMessage{
-				Channel:     "xqcow",
+				Channel:     "#xqcow",
 				IRCType:     "CLEARCHAT",
 				Text:        "haru_exc timed out for 10 seconds in xqcow",
 				Type:        CLEARCHAT,
@@ -222,7 +222,7 @@ func TestParseClearChatMessage(t *testing.T) {
 		{
 			"@room-id=71092938;target-user-id=462385855;tmi-sent-ts=1568505916367 :tmi.twitch.tv CLEARCHAT #apocalypse :xmukkk",
 			ClearChatMessage{
-				Channel:     "apocalypse",
+				Channel:     "#apocalypse",
 				IRCType:     "CLEARCHAT",
 				Text:        "xmukkk was permanently banned in apocalypse",
 				Type:        CLEARCHAT,
@@ -233,7 +233,7 @@ func TestParseClearChatMessage(t *testing.T) {
 		{
 			"@room-id=1234567;tmi-sent-ts=1234567 :tmi.twitch.tv CLEARCHAT #twitch",
 			ClearChatMessage{
-				Channel:     "twitch",
+				Channel:     "#twitch",
 				IRCType:     "CLEARCHAT",
 				Text:        "chat cleared in twitch",
 				Type:        CLEARCHAT,
@@ -278,7 +278,7 @@ func TestParseClearMsgMessage(t *testing.T) {
 		{
 			"@login=ronni;target-msg-id=abc-123-def :tmi.twitch.tv CLEARMSG #dallas :HeyGuys",
 			ClearMsgMessage{
-				Channel:     "dallas",
+				Channel:     "#dallas",
 				IRCType:     "CLEARMSG",
 				Text:        "HeyGuys",
 				Type:        CLEARMSG,
@@ -289,7 +289,7 @@ func TestParseClearMsgMessage(t *testing.T) {
 		{
 			"@login=<login>;target-msg-id=<target-msg-id> :tmi.twitch.tv CLEARMSG #<channel> :<message>",
 			ClearMsgMessage{
-				Channel:     "<channel>",
+				Channel:     "#<channel>",
 				IRCType:     "CLEARMSG",
 				Text:        "<message>",
 				Type:        CLEARMSG,

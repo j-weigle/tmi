@@ -147,24 +147,36 @@ func (c *Client) Part(channels ...string) error {
 
 // Say sends a PRIVMSG message in channel.
 func (c *Client) Say(channel string, message string) error {
-	if c.config.Identity.anonymous {
-		return errors.New("cannot send messages as an anonymous user")
-	}
 	channel = formatChannel(channel)
 
 	if len(message) >= 500 {
-		var lastSpace = strings.LastIndex(message[:500], " ")
-		if lastSpace == -1 {
-			lastSpace = 500
+		var messages = splitChatMessage(message)
+		for _, m := range messages {
+			c.send("PRIVMSG " + channel + " :" + m)
 		}
-		c.send("PRIVMSG " + channel + " :" + message[:lastSpace])
-		c.Say(channel, strings.TrimSpace(message[lastSpace:]))
 	} else {
-		if message != "" {
-			return c.send("PRIVMSG " + channel + " :" + message)
-		}
+		c.send("PRIVMSG " + channel + " :" + message)
 	}
 	return nil
+}
+
+func splitChatMessage(message string) []string {
+	const splIdx = 500
+	var messages []string
+
+	for len(message) >= splIdx {
+		var lastSpace = strings.LastIndex(message[:splIdx], " ")
+		if lastSpace == -1 {
+			lastSpace = splIdx
+		}
+		messages = append(messages, strings.TrimSpace(message[:lastSpace]))
+		message = strings.TrimSpace(message[lastSpace:])
+	}
+	if message != "" {
+		messages = append(messages, message)
+	}
+
+	return messages
 }
 
 // UpdatePassword updates the password the client uses for authentication.

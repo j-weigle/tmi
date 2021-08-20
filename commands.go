@@ -153,17 +153,27 @@ func (c *Client) Part(channels ...string) error {
 
 // Say sends a PRIVMSG message in channel.
 func (c *Client) Say(channel string, message string) error {
-	if strings.HasPrefix(c.config.Identity.username, "justinfan") {
+	if c.config.Identity.anonymous {
 		return errors.New("cannot send messages as an anonymous user")
 	}
-	if len(message) >= 500 {
-		return errors.New("twitch chat's message length limit is 500 characters")
-	}
-
+	channel = strings.ToLower(channel)
 	if !strings.HasPrefix(channel, "#") {
 		channel = "#" + channel
 	}
-	return c.send("PRIVMSG " + channel + " :" + message)
+
+	if len(message) >= 500 {
+		var lastSpace = strings.LastIndex(message[:500], " ")
+		if lastSpace == -1 {
+			lastSpace = 500
+		}
+		c.send("PRIVMSG " + channel + " :" + message[:lastSpace])
+		c.Say(channel, strings.TrimSpace(message[lastSpace:]))
+	} else {
+		if message != "" {
+			return c.send("PRIVMSG " + channel + " :" + message)
+		}
+	}
+	return nil
 }
 
 // UpdatePassword updates the password the client uses for authentication.

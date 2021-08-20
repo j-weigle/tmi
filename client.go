@@ -122,54 +122,6 @@ func (c *Client) disconnect() {
 	c.conn.Close()
 }
 
-func (c *Client) handleMessage(rawMessage string) error {
-	var ircData, errParseIRC = parseIRCMessage(rawMessage)
-	var parseUnset = func() error {
-		if c.handlers.onUnsetMessage != nil {
-			var unsetMessage = parseUnsetMessage(ircData)
-			c.handlers.onUnsetMessage(unsetMessage)
-		}
-		return nil
-	}
-	if errParseIRC != nil {
-		return parseUnset()
-	}
-
-	var err error
-	switch ircData.Prefix {
-	case "tmi.twitch.tv":
-		err = c.tmiTwitchTvHandlers(ircData)
-		if err == ErrUnsetIRCCommand {
-			return parseUnset()
-		}
-		if err == ErrUnrecognizedIRCCommand {
-			c.warnUser(errors.New("unrecognized message with tmi.twitch.tv prefix:\n" + rawMessage))
-			return nil
-		}
-		return err
-	case "jtv":
-		err = c.jtvHandlers(ircData)
-		if err == ErrUnsetIRCCommand {
-			return parseUnset()
-		}
-		if err == ErrUnrecognizedIRCCommand {
-			c.warnUser(errors.New("unrecognized message with jtv prefix:\n" + rawMessage))
-			return nil
-		}
-		return err
-	default:
-		err = c.otherHandlers(ircData)
-		if err == ErrUnsetIRCCommand {
-			return parseUnset()
-		}
-		if err == ErrUnrecognizedIRCCommand {
-			c.warnUser(errors.New("unrecognized message with { " + ircData.Prefix + " } prefix:\n" + rawMessage))
-			return nil
-		}
-		return err
-	}
-}
-
 // locks join queue and begins sending joins on a interval
 func (c *Client) joinChannels(channels []string) {
 	if channels == nil || len(channels) < 1 {
@@ -214,7 +166,7 @@ func (c *Client) readInbound(ctx context.Context, closeErrCb func(error)) {
 		case <-ctx.Done():
 			return
 		case rawMessage := <-c.inbound:
-			if err := c.handleMessage(rawMessage); err != nil {
+			if err := c.handleIRCMessage(rawMessage); err != nil {
 				closeErrCb(err)
 				return
 			}

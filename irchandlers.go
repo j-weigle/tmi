@@ -9,6 +9,54 @@ var (
 	ErrUnsetIRCCommand        = errors.New("unset IRC Command")
 )
 
+func (c *Client) handleIRCMessage(rawMessage string) error {
+	var ircData, errParseIRC = parseIRCMessage(rawMessage)
+	var parseUnset = func() error {
+		if c.handlers.onUnsetMessage != nil {
+			var unsetMessage = parseUnsetMessage(ircData)
+			c.handlers.onUnsetMessage(unsetMessage)
+		}
+		return nil
+	}
+	if errParseIRC != nil {
+		return parseUnset()
+	}
+
+	var err error
+	switch ircData.Prefix {
+	case "tmi.twitch.tv":
+		err = c.tmiTwitchTvHandlers(ircData)
+		if err == ErrUnsetIRCCommand {
+			return parseUnset()
+		}
+		if err == ErrUnrecognizedIRCCommand {
+			c.warnUser(errors.New("unrecognized message with tmi.twitch.tv prefix:\n" + rawMessage))
+			return nil
+		}
+		return err
+	case "jtv":
+		err = c.jtvHandlers(ircData)
+		if err == ErrUnsetIRCCommand {
+			return parseUnset()
+		}
+		if err == ErrUnrecognizedIRCCommand {
+			c.warnUser(errors.New("unrecognized message with jtv prefix:\n" + rawMessage))
+			return nil
+		}
+		return err
+	default:
+		err = c.otherHandlers(ircData)
+		if err == ErrUnsetIRCCommand {
+			return parseUnset()
+		}
+		if err == ErrUnrecognizedIRCCommand {
+			c.warnUser(errors.New("unrecognized message with { " + ircData.Prefix + " } prefix:\n" + rawMessage))
+			return nil
+		}
+		return err
+	}
+}
+
 func (c *Client) tmiTwitchTvHandlers(data IRCData) error {
 	switch data.Command {
 	// UNIMPLEMENTED

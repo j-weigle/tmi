@@ -93,18 +93,15 @@ func (c *Client) Join(channels ...string) error {
 
 	var newJoins = []string{}
 	c.channelsMutex.Lock()
-	for _, ch := range channels {
-		ch = strings.ToLower(ch)
-		if !strings.HasPrefix(ch, "#") {
-			ch = "#" + ch
-		}
+	for _, channel := range channels {
+		channel = formatChannel(channel)
 
-		connected, ok := c.channels[ch]
+		connected, ok := c.channels[channel]
 		if !ok {
-			c.channels[ch] = false
+			c.channels[channel] = false
 		}
 		if !connected {
-			newJoins = append(newJoins, ch)
+			newJoins = append(newJoins, channel)
 		}
 	}
 	c.channelsMutex.Unlock()
@@ -134,10 +131,7 @@ func (c *Client) Part(channels ...string) error {
 	}
 
 	for _, channel := range channels {
-		channel = strings.ToLower(channel)
-		if !strings.HasPrefix(channel, "#") {
-			channel = "#" + channel
-		}
+		channel = formatChannel(channel)
 
 		if c.connected.get() {
 			c.send("PART " + channel)
@@ -156,10 +150,7 @@ func (c *Client) Say(channel string, message string) error {
 	if c.config.Identity.anonymous {
 		return errors.New("cannot send messages as an anonymous user")
 	}
-	channel = strings.ToLower(channel)
-	if !strings.HasPrefix(channel, "#") {
-		channel = "#" + channel
-	}
+	channel = formatChannel(channel)
 
 	if len(message) >= 500 {
 		var lastSpace = strings.LastIndex(message[:500], " ")

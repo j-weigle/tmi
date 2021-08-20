@@ -46,7 +46,7 @@ type onMessageHandlers struct {
 	onPartMessage            func(PartMessage)
 	onPingMessage            func(PingMessage)
 	onPongMessage            func(PongMessage)
-	onPrivmsgMessage         func(PrivmsgMessage)
+	onPrivateMessage         func(PrivateMessage)
 	onWhisperMessage         func(WhisperMessage)
 }
 

@@ -158,7 +158,10 @@ func (c *Client) otherHandlers(data IRCData) error {
 		return nil
 
 	case "PRIVMSG":
-		return c.otherCommandPRIVMSG(data)
+		if c.handlers.onPrivateMessage != nil {
+			c.handlers.onPrivateMessage(parsePrivateMessage(data))
+		}
+		return nil
 
 	case "WHISPER":
 		return c.otherCommandWHISPER(data)
@@ -169,10 +172,6 @@ func (c *Client) otherHandlers(data IRCData) error {
 	}
 }
 
-func (c *Client) otherCommandPRIVMSG(ircData IRCData) error {
-	fmt.Println("Got PRIVMSG")
-	return nil
-}
 func (c *Client) otherCommandWHISPER(ircData IRCData) error {
 	fmt.Println("Got WHISPER")
 	return nil

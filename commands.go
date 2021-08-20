@@ -221,8 +221,8 @@ func (c *Client) OnPingMessage(cb func(PingMessage)) {
 func (c *Client) OnPongMessage(cb func(PongMessage)) {
 	c.handlers.onPongMessage = cb
 }
-func (c *Client) OnPrivmsgMessage(cb func(PrivmsgMessage)) {
-	c.handlers.onPrivmsgMessage = cb
+func (c *Client) OnPrivateMessage(cb func(PrivateMessage)) {
+	c.handlers.onPrivateMessage = cb
 }
 func (c *Client) OnWhisperMessage(cb func(WhisperMessage)) {
 	c.handlers.onWhisperMessage = cb

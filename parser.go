@@ -37,10 +37,21 @@ func ParseTimeStamp(unixTime string) time.Time {
 	return time.Unix(0, i*int64(time.Millisecond))
 }
 
+func ParseReplyParentMessage(tags IRCTags) ReplyMsgParent {
+	return ReplyMsgParent{
+		DisplayName: tags["reply-parent-display-name"],
+		ID:          tags["reply-parent-msg-id"],
+		Text:        tags["reply-parent-msg-body"],
+		UserID:      tags["reply-parent-user-id"],
+		Username:    tags["reply-parent-user-login"],
+	}
+}
+
 func parseIRCMessage(message string) (IRCData, error) {
 	ircData := IRCData{
 		Raw:    message,
 		Params: []string{},
+		Tags:   make(IRCTags),
 	}
 
 	fields := strings.Fields(message)
@@ -491,6 +502,41 @@ func parsePartMessage(data IRCData) PartMessage {
 	}
 }
 
+func parsePrivateMessage(data IRCData) PrivateMessage {
+	var privateMessage = PrivateMessage{
+		Channel: strings.TrimPrefix(data.Params[0], "#"),
+		Data:    data,
+		IRCType: data.Command,
+		Type:    PRIVMSG,
+		ID:      data.Tags["id"],
+		User:    parseUser(data.Tags, data.Prefix),
+	}
+
+	if len(data.Params) == 2 {
+		privateMessage.Text = data.Params[1]
+	}
+
+	var text = privateMessage.Text
+	if strings.HasPrefix(text, "\u0001ACTION") && strings.HasSuffix(text, "\u0001") {
+		privateMessage.Text = text[len("\u0001ACTION ") : len(text)-1]
+		privateMessage.Action = true
+	}
+
+	privateMessage.Emotes = parseEmotes(data.Tags["emotes"], text)
+
+	if bits, ok := data.Tags["bits"]; ok {
+		if val, err := strconv.Atoi(bits); err == nil {
+			privateMessage.Bits = val
+		}
+	}
+
+	if _, ok := data.Tags["reply-parent-msg-id"]; ok {
+		privateMessage.Reply = true
+	}
+
+	return privateMessage
+}
+
 func parseUser(tags IRCTags, prefix string) *User {
 	var user = User{
 		BadgeInfo:   tags["badge-info"],
@@ -499,14 +545,8 @@ func parseUser(tags IRCTags, prefix string) *User {
 		Mod:         tags["mod"] == "1",
 		Subscriber:  tags["subscriber"] == "1",
 		Turbo:       tags["turbo"] == "1",
-		UserID:      tags["user-id"],
+		ID:          tags["user-id"],
 		UserType:    tags["user-type"],
-	}
-
-	if bits, ok := tags["bits"]; ok {
-		if val, err := strconv.Atoi(bits); err == nil {
-			user.Bits = val
-		}
 	}
 
 	if user.DisplayName != "" {

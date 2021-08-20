@@ -214,7 +214,7 @@ type PongMessage struct {
 	Type    MessageType `json:"type"`
 }
 
-type PrivmsgMessage struct {
+type PrivateMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
@@ -222,9 +222,19 @@ type PrivmsgMessage struct {
 	Type    MessageType `json:"type"`
 
 	Action bool    `json:"action"` // indicates if the /me command was used
+	Bits   int     `json:"bits"`   // number of bits if bits message
 	Emotes []Emote `json:"emotes"` // parsed emotes string
-	MsgID  string  `json:"id"`     // tags["id"]
+	ID     string  `json:"id"`     // message id
+	Reply  bool    `json:"reply"`  // indicates if the message is a reply
 	User   *User   `json:"user"`   // user that sent the message
+}
+
+type ReplyMsgParent struct {
+	DisplayName string `json:"display-name"`
+	ID          string `json:"id"`   // message id
+	Text        string `json:"text"` // message body
+	UserID      string `json:"user-id"`
+	Username    string `json:"username"` // login
 }
 
 type WhisperMessage struct {
@@ -260,7 +270,6 @@ type EmotePosition struct {
 type User struct {
 	BadgeInfo   string  `json:"badge-info"`
 	Badges      []Badge `json:"badges"`
-	Bits        int     `json:"bits"`
 	Broadcaster bool    `json:"broadcaster"`
 	Color       string  `json:"color"`
 	DisplayName string  `json:"display-name"`
@@ -268,7 +277,7 @@ type User struct {
 	Name        string  `json:"name"`
 	Subscriber  bool    `json:"subscriber"`
 	Turbo       bool    `json:"turbo"`
-	UserID      string  `json:"user-id"`
+	ID          string  `json:"id"`
 	UserType    string  `json:"user-type"`
 	VIP         bool    `json:"vip"`
 }

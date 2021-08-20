@@ -238,17 +238,16 @@ type ReplyMsgParent struct {
 }
 
 type WhisperMessage struct {
-	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Text    string      `json:"text"`
 	Type    MessageType `json:"type"`
 
-	Action bool    `json:"action"`     // indicates if the /me command was used
-	Emotes []Emote `json:"emotes"`     // parsed emotes string
-	MsgID  string  `json:"message-id"` // tags["message-id"]
-	Target string  `json:"target"`     // message recipient
-	User   *User   `json:"user"`       // message sender
+	Action bool    `json:"action"` // indicates if the /me command was used
+	Emotes []Emote `json:"emotes"` // parsed emotes string
+	ID     string  `json:"id"`     // tags["message-id"]
+	Target string  `json:"target"` // message recipient
+	User   *User   `json:"user"`   // message sender
 }
 
 type Badge struct {

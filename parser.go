@@ -516,13 +516,13 @@ func parsePrivateMessage(data IRCData) PrivateMessage {
 		privateMessage.Text = data.Params[1]
 	}
 
-	var text = privateMessage.Text
-	if strings.HasPrefix(text, "\u0001ACTION") && strings.HasSuffix(text, "\u0001") {
-		privateMessage.Text = text[len("\u0001ACTION ") : len(text)-1]
+	if strings.HasPrefix(privateMessage.Text, "\u0001ACTION") &&
+		strings.HasSuffix(privateMessage.Text, "\u0001") {
+		privateMessage.Text = privateMessage.Text[len("\u0001ACTION ") : len(privateMessage.Text)-1]
 		privateMessage.Action = true
 	}
 
-	privateMessage.Emotes = parseEmotes(data.Tags["emotes"], text)
+	privateMessage.Emotes = parseEmotes(data.Tags["emotes"], privateMessage.Text)
 
 	if bits, ok := data.Tags["bits"]; ok {
 		if val, err := strconv.Atoi(bits); err == nil {
@@ -535,6 +535,30 @@ func parsePrivateMessage(data IRCData) PrivateMessage {
 	}
 
 	return privateMessage
+}
+
+func parseWhisperMessage(data IRCData) WhisperMessage {
+	var whisperMessage = WhisperMessage{
+		Data:    data,
+		IRCType: data.Command,
+		Type:    WHISPER,
+		ID:      data.Tags["message-id"],
+		Target:  data.Params[0],
+		User:    parseUser(data.Tags, data.Prefix),
+	}
+
+	if len(data.Params) == 2 {
+		whisperMessage.Text = data.Params[1]
+	}
+
+	if strings.HasPrefix(whisperMessage.Text, "/me") {
+		whisperMessage.Text = whisperMessage.Text[len("/me "):]
+		whisperMessage.Action = true
+	}
+
+	whisperMessage.Emotes = parseEmotes(data.Tags["emotes"], whisperMessage.Text)
+
+	return whisperMessage
 }
 
 func parseUser(tags IRCTags, prefix string) *User {

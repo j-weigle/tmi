@@ -2,7 +2,6 @@ package tmi
 
 import (
 	"errors"
-	"fmt"
 )
 
 var (
@@ -164,15 +163,13 @@ func (c *Client) otherHandlers(data IRCData) error {
 		return nil
 
 	case "WHISPER":
-		return c.otherCommandWHISPER(data)
+		if c.handlers.onWhisperMessage != nil {
+			c.handlers.onWhisperMessage(parseWhisperMessage(data))
+		}
+		return nil
 
 	// NOT RECOGNIZED
 	default:
 		return ErrUnrecognizedIRCCommand
 	}
-}
-
-func (c *Client) otherCommandWHISPER(ircData IRCData) error {
-	fmt.Println("Got WHISPER")
-	return nil
 }

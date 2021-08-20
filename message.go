@@ -141,7 +141,7 @@ type RoomstateMessage struct {
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 
-	// emote-only, followers-only, r9k(uniquechat), slow(slowmode), subs-only
+	// emote-only, followers-only, r9k(uniquechat), rituals, slow(slowmode), subs-only
 	States map[string]RoomState `json:"states"` // the states in the roomstate tags
 }
 

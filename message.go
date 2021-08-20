@@ -173,7 +173,7 @@ type UserstateMessage struct {
 	User      *User    `json:"user"`       // user that joined or sent a privmsg
 }
 
-type NamesMessage struct { // warning: technically deprecated, but not quite removed yet
+type NamesMessage struct { // WARNING: deprecated, but not removed yet
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`

@@ -128,7 +128,11 @@ func (c *Client) otherHandlers(data IRCData) error {
 
 	// IMPLEMENTED
 	case "353": // RPL_NAMREPLY RFC1459 ; aka NAMES on twitch dev docs
-		return c.otherCommand353(data)
+		// WARNING: deprecated, but not removed yet
+		if c.handlers.onNamesMessage != nil {
+			c.handlers.onNamesMessage(parseNamesMessage(data))
+		}
+		return nil
 
 	case "JOIN":
 		return c.otherCommandJOIN(data)
@@ -159,10 +163,6 @@ func (c *Client) otherHandlers(data IRCData) error {
 	}
 }
 
-func (c *Client) otherCommand353(ircData IRCData) error {
-	fmt.Println("Got 353: NAMES")
-	return nil
-}
 func (c *Client) otherCommandJOIN(ircData IRCData) error {
 	fmt.Println("Got JOIN")
 	return nil

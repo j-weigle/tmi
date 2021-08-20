@@ -455,6 +455,22 @@ func parseUserstateMessage(data IRCData) UserstateMessage {
 	}
 }
 
+func parseNamesMessage(data IRCData) NamesMessage {
+	// WARNING: deprecated, but not removed yet
+	var namesMessage = NamesMessage{
+		Data:    data,
+		IRCType: data.Command,
+		Type:    NAMES,
+	}
+
+	if len(data.Params) == 4 {
+		namesMessage.Channel = strings.TrimPrefix(data.Params[2], "#")
+		namesMessage.Users = strings.Fields(data.Params[3])
+	}
+
+	return namesMessage
+}
+
 func parseUser(tags IRCTags, prefix string) *User {
 	var user = User{
 		BadgeInfo:   tags["badge-info"],

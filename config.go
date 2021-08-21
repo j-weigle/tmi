@@ -44,6 +44,20 @@ func NewClientConfig() clientConfig {
 	}
 }
 
+// Default sets the connection configuration options to their recommended defaults.
+//
+// Default options:
+// reconnect            = true,
+// secure               = true,
+// maxReconnectAttempts = -1 (infinite),
+// maxReconnectInterval = 30 seconds,
+func (c *connectionConfig) Default() {
+	c.reconnect = true
+	c.secure = true
+	c.maxReconnectAttempts = -1
+	c.maxReconnectInterval = time.Second * 30
+}
+
 // SetReconnect sets whether the client will attempt to reconnect
 // to the server in the case of a disconnect.
 func (c *connectionConfig) SetReconnect(reconnect bool) {
@@ -67,18 +81,10 @@ func (c *connectionConfig) SetSecure(secure bool) {
 	c.secure = secure
 }
 
-// Default sets the connection configuration options to their recommended defaults.
-//
-// Default options:
-// reconnect            = true,
-// secure               = true,
-// maxReconnectAttempts = -1 (infinite),
-// maxReconnectInterval = 30000 milliseconds,
-func (c *connectionConfig) Default() {
-	c.reconnect = true
-	c.secure = true
-	c.maxReconnectAttempts = -1
-	c.maxReconnectInterval = 30000
+// Anonymous sets username to an random justinfan username (password can be anything).
+func (id *identityConfig) Anonymous() {
+	id.username = "justinfan" + fmt.Sprint(rand.Intn(79000)+1000)
+	id.password = "swordfish"
 }
 
 // Set sets the login identity configuration to username and password with oauth: prepended.
@@ -89,31 +95,27 @@ func (id *identityConfig) Set(username, password string) {
 
 // SetPassword sets the password for the identity configuration to password with oauth: prepended.
 func (id *identityConfig) SetPassword(password string) {
+	password = strings.TrimSpace(password)
 	if !strings.HasPrefix(password, "oauth:") {
 		password = "oauth:" + password
 	}
 	id.password = password
 }
 
-// Anonymous sets username to an random justinfan username (password can be anything).
-func (id *identityConfig) Anonymous() {
-	id.username = "justinfan" + fmt.Sprint(rand.Intn(79000)+1000)
-	id.password = "swordfish"
-}
-
 // SetUsername sets the username for the identity configuration to username.
 func (id *identityConfig) SetUsername(username string) {
+	username = strings.TrimSpace(username)
 	id.username = strings.ToLower(username)
-}
-
-// Set sets the idle wait time and timeout for ping configuration p.
-func (p *pingConfig) Set(wait, timeout time.Duration) {
-	p.interval = wait
-	p.timeout = timeout
 }
 
 // Default sets the ping configuration options to their recommended defaults.
 func (p *pingConfig) Default() {
 	p.interval = time.Minute
 	p.timeout = time.Second * 5
+}
+
+// Set sets the idle wait time and timeout for ping configuration p.
+func (p *pingConfig) Set(wait, timeout time.Duration) {
+	p.interval = wait
+	p.timeout = timeout
 }

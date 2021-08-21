@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewClientConfig(t *testing.T) {
-	connection := connectionConfig{true, true, -1, 30000}
+	connection := connectionConfig{true, true, -1, time.Second * 30}
 	id := identityConfig{}
 	pinger := pingConfig{
 		interval: time.Minute,

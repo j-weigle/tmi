@@ -32,3 +32,37 @@ func TestAnonymousConnection(t *testing.T) {
 		t.Error(errConnecting)
 	}
 }
+
+func TestJoinThreeChannels(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip:TestJoinThreeChannels, reason:short mode")
+	}
+	tests := []string{"#twitch", "#testchannel", "#twitchmedia"}
+	results := make(map[string]bool)
+	for _, test := range tests {
+		results[test] = false
+	}
+
+	config := NewClientConfig()
+	config.Identity.Anonymous()
+	c := NewClient(config)
+
+	c.OnJoinMessage(func(m JoinMessage) {
+		results[m.Channel] = true
+	})
+
+	c.Join(tests...)
+
+	go func() {
+		// join waits 600 milliseconds between joins, give it extra time
+		time.Sleep(time.Millisecond * 650 * 3)
+		c.Disconnect()
+	}()
+	c.Connect()
+
+	for _, test := range tests {
+		if joined, ok := results[test]; !(ok && joined) {
+			t.Errorf("did not join %v", test)
+		}
+	}
+}

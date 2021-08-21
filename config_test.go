@@ -58,3 +58,13 @@ func TestSetReconnectSettings(t *testing.T) {
 		t.Errorf("maxReconnectInterval: got %v, want %v", config.Connection.maxReconnectInterval, time.Second*5)
 	}
 }
+
+func TestSetPassword(t *testing.T) {
+	config := NewClientConfig()
+	config.Identity.SetPassword("p")
+	var want = "oauth:p"
+
+	if config.Identity.password != want {
+		t.Errorf("SetPassword: got %v, want %v", config.Identity.password, want)
+	}
+}

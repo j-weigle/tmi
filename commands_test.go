@@ -129,3 +129,13 @@ func TestSayLong(t *testing.T) {
 		}
 	}
 }
+
+func TestUpdatePassword(t *testing.T) {
+	want := "oauth:newpassword"
+	pw := "newpassword"
+	c := NewClient(NewClientConfig())
+	c.UpdatePassword(pw)
+	if c.config.Identity.password != want {
+		t.Errorf("got %v, want %v", c.config.Identity.password, want)
+	}
+}

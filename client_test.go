@@ -39,6 +39,7 @@ func TestReadInbound(t *testing.T) {
 		t.Errorf("expected error: %v, got error: %v", errReconnect, closeErr.err)
 	}
 
+	// Context closed
 	closeErr = connCloseErr{}
 	closeErrCb = func(errReason error) {
 		closeErr.update(errReason)

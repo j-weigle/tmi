@@ -2,6 +2,7 @@ package tmi
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -83,6 +84,48 @@ func TestFormatChannel(t *testing.T) {
 		got := formatChannel(test.in)
 		if got != test.want {
 			t.Errorf("got %v, want %v", got, test.want)
+		}
+	}
+}
+
+func TestSay(t *testing.T) {
+	type testInput struct {
+		channel string
+		message string
+	}
+	tests := []struct {
+		in   testInput
+		want string
+	}{
+		{testInput{"test", "hello test"}, "PRIVMSG #test :hello test"},
+		{testInput{"#Checking", "I am checking"}, "PRIVMSG #checking :I am checking"},
+		{testInput{"#beep", "boop"}, "PRIVMSG #beep :boop"},
+		{testInput{"CHANNEL", "yeah okay"}, "PRIVMSG #channel :yeah okay"},
+	}
+
+	c := NewClient(NewClientConfig())
+	for _, test := range tests {
+		c.Say(test.in.channel, test.in.message)
+		got := <-c.outbound
+		if got != test.want {
+			t.Errorf("got %v, want %v", got, test.want)
+		}
+	}
+}
+
+func TestSayLong(t *testing.T) {
+	test := strings.Repeat("x ", 510)
+	wants := []string{"PRIVMSG #long :" + strings.TrimSpace(test[:500]),
+		"PRIVMSG #long :" + strings.TrimSpace(test[500:1000]),
+		"PRIVMSG #long :" + strings.TrimSpace(test[1000:])}
+
+	c := NewClient(NewClientConfig())
+	c.Say("#long", test)
+
+	for _, want := range wants {
+		got := <-c.outbound
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
 		}
 	}
 }

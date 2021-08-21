@@ -31,7 +31,7 @@ func (c *Client) Connect() error {
 	}
 
 	var maxReconnectAttempts int = c.config.Connection.maxReconnectAttempts
-	var maxReconnectInterval = time.Duration(c.config.Connection.maxReconnectInterval)
+	var maxReconnectInterval time.Duration = c.config.Connection.maxReconnectInterval
 
 	// Reset disconnect before starting connection loop. connect() will check if it has
 	// been used before attempting to (re)connect.

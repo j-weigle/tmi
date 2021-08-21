@@ -10,7 +10,7 @@ func TestNewClientConfig(t *testing.T) {
 	connection := connectionConfig{true, true, -1, 30000}
 	id := identityConfig{}
 	pinger := pingConfig{
-		interval: time.Second * 60,
+		interval: time.Minute,
 		timeout:  time.Second * 5,
 	}
 
@@ -18,14 +18,17 @@ func TestNewClientConfig(t *testing.T) {
 	got := NewClientConfig()
 
 	if want.Connection != got.Connection {
-		t.Errorf("NewClientConfig().Connection == %v, want %v", got.Connection, want.Connection)
+		t.Errorf("Connection: got %v, want %v", got.Connection, want.Connection)
 	}
 	if want.Identity != got.Identity {
-		t.Errorf("NewClientConfig().Identity == %v, want %v", got.Identity, want.Identity)
+		t.Errorf("Identity: got %v, want %v", got.Identity, want.Identity)
+	}
+	if want.Pinger != got.Pinger {
+		t.Errorf("Pinger: got %v, want %v", got.Pinger, want.Pinger)
 	}
 }
 
-func TestSetToAnonymous(t *testing.T) {
+func TestAnonymous(t *testing.T) {
 	config := NewClientConfig()
 	config.Identity.Anonymous()
 
@@ -36,5 +39,22 @@ func TestSetToAnonymous(t *testing.T) {
 	_, err := strconv.Atoi(config.Identity.username[10:])
 	if err != nil {
 		t.Errorf("SetToAnonymous should generate a random integer to end justinfan username")
+	}
+}
+
+func TestSetReconnectSettings(t *testing.T) {
+	config := NewClientConfig()
+	config.Connection.SetReconnectSettings(20, time.Second*6)
+
+	if config.Connection.maxReconnectAttempts != 20 {
+		t.Errorf("maxReconnectAttempts: got %v, want %v", config.Connection.maxReconnectAttempts, 20)
+	}
+	if config.Connection.maxReconnectInterval != time.Second*6 {
+		t.Errorf("maxReconnectInterval: got %v, want %v", config.Connection.maxReconnectInterval, time.Second*6)
+	}
+
+	config.Connection.SetReconnectSettings(20, time.Second*4)
+	if config.Connection.maxReconnectInterval != time.Second*5 {
+		t.Errorf("maxReconnectInterval: got %v, want %v", config.Connection.maxReconnectInterval, time.Second*5)
 	}
 }

@@ -14,10 +14,10 @@ type clientConfig struct {
 }
 
 type connectionConfig struct {
-	reconnect            bool // if true, reconnect on reconnect requests and non-fatal errors.
-	secure               bool // if true, connect to to Twitch's secure server(port 443), otherwise insecure (port 80).
-	maxReconnectAttempts int  // maximum number of attempts to reconnect when disconnected.
-	maxReconnectInterval int  // maximum interval between reconnect attempts.
+	reconnect            bool          // if true, reconnect on reconnect requests and non-fatal errors.
+	secure               bool          // if true, connect to to Twitch's secure server(port 443), otherwise insecure (port 80).
+	maxReconnectAttempts int           // maximum number of attempts to reconnect when disconnected.
+	maxReconnectInterval time.Duration // maximum interval between reconnect attempts.
 }
 
 type identityConfig struct {
@@ -52,10 +52,10 @@ func (c *connectionConfig) SetReconnect(reconnect bool) {
 
 // SetReconnectSettings sets how often and how many times the client
 // will attempt to reconnect to the server in the case of a disconnect.
-func (c *connectionConfig) SetReconnectSettings(maxAttempts, maxInterval int) {
+func (c *connectionConfig) SetReconnectSettings(maxAttempts int, maxInterval time.Duration) {
 	c.maxReconnectAttempts = maxAttempts
-	if maxInterval < 5000 {
-		maxInterval = 5000
+	if maxInterval < time.Second*5 {
+		maxInterval = time.Second * 5
 	}
 	c.maxReconnectInterval = maxInterval
 }

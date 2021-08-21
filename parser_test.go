@@ -202,7 +202,7 @@ func TestParseClearChatMessage(t *testing.T) {
 			ClearChatMessage{
 				Channel:     "#bobby",
 				IRCType:     "CLEARCHAT",
-				Text:        "onche timed out for 150 seconds in bobby",
+				Text:        "onche timed out for 150 seconds in #bobby",
 				Type:        CLEARCHAT,
 				BanDuration: time.Second * 150,
 				Target:      "onche",
@@ -213,7 +213,7 @@ func TestParseClearChatMessage(t *testing.T) {
 			ClearChatMessage{
 				Channel:     "#xqcow",
 				IRCType:     "CLEARCHAT",
-				Text:        "haru_exc timed out for 10 seconds in xqcow",
+				Text:        "haru_exc timed out for 10 seconds in #xqcow",
 				Type:        CLEARCHAT,
 				BanDuration: time.Second * 10,
 				Target:      "haru_exc",
@@ -224,7 +224,7 @@ func TestParseClearChatMessage(t *testing.T) {
 			ClearChatMessage{
 				Channel:     "#apocalypse",
 				IRCType:     "CLEARCHAT",
-				Text:        "xmukkk was permanently banned in apocalypse",
+				Text:        "xmukkk was permanently banned in #apocalypse",
 				Type:        CLEARCHAT,
 				BanDuration: -1,
 				Target:      "xmukkk",
@@ -235,7 +235,7 @@ func TestParseClearChatMessage(t *testing.T) {
 			ClearChatMessage{
 				Channel:     "#twitch",
 				IRCType:     "CLEARCHAT",
-				Text:        "chat cleared in twitch",
+				Text:        "chat cleared in #twitch",
 				Type:        CLEARCHAT,
 				BanDuration: -1,
 				Target:      "",

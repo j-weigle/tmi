@@ -66,3 +66,23 @@ func TestJoinThreeChannels(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatChannel(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"test", "#test"},
+		{"chEcking", "#checking"},
+		{"#billY", "#billy"},
+		{"#bobby", "#bobby"},
+		{" oops", "#oops"},
+	}
+
+	for _, test := range tests {
+		got := formatChannel(test.in)
+		if got != test.want {
+			t.Errorf("got %v, want %v", got, test.want)
+		}
+	}
+}

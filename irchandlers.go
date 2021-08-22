@@ -16,11 +16,7 @@ func (c *Client) handleIRCMessage(rawMessage string) error {
 	}
 
 	var err = c.tmiHandlers(data)
-	if err == ErrUnsetIRCCommand {
-		return c.unsetHandler(data)
-	}
-	if err == ErrUnrecognizedIRCCommand {
-		c.warnUser(errors.New("unrecognized message with { " + data.Prefix + " } prefix:\n" + rawMessage))
+	if err == ErrUnsetIRCCommand || err == ErrUnrecognizedIRCCommand {
 		return c.unsetHandler(data)
 	}
 	return err

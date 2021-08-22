@@ -24,7 +24,6 @@ type Client struct {
 	inbound          chan string   // for sending inbound messages to the handlers, acts as a buffer.
 	joinQMutex       sync.Mutex    // join queue mutex, prevent exceeding join rate limit
 	notifDisconnect  notifier      // used for disconnect call notifications
-	onError          func(error)   // callback function for non-fatal errors.
 	outbound         chan string   // for sending outbound messages to the writer.
 	rcvdMsg          chan struct{} // when conn reads, notifies ping loop.
 	rcvdPong         chan struct{} // when pong received, notifies ping loop.
@@ -288,10 +287,4 @@ func (c *Client) spawnWriter(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 			}
 		}
 	}()
-}
-
-func (c *Client) warnUser(err error) {
-	if c.onError != nil {
-		c.onError(err)
-	}
 }

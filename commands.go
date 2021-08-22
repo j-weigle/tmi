@@ -120,11 +120,6 @@ func (c *Client) OnDone(cb func(fatal error)) {
 	c.done = cb
 }
 
-// OnErr sets the callback function for general error messages to cb.
-func (c *Client) OnErr(cb func(error)) {
-	c.onError = cb
-}
-
 // Part leaves channels.
 func (c *Client) Part(channels ...string) error {
 	if channels == nil || len(channels) < 1 {

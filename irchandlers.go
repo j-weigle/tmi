@@ -133,7 +133,7 @@ func (c *Client) tmiHandlers(data IRCData) error {
 			c.send("PONG :" + pingMessage.Text)
 		}
 		if c.handlers.onPingMessage != nil {
-			c.handlers.onPingMessage(parsePingMessage(data))
+			c.handlers.onPingMessage(pingMessage)
 		}
 		return nil
 
@@ -146,7 +146,7 @@ func (c *Client) tmiHandlers(data IRCData) error {
 			}
 		}
 		if c.handlers.onPongMessage != nil {
-			c.handlers.onPongMessage(parsePongMessage(data))
+			c.handlers.onPongMessage(pongMessage)
 		}
 		return nil
 

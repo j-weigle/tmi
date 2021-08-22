@@ -14,9 +14,10 @@ const (
 )
 
 var (
-	errReconnect        = errors.New("reconnect")
-	ErrDisconnectCalled = errors.New("disconnect was called")
-	ErrLoginFailure     = errors.New("login failure")
+	errReconnect                   = errors.New("reconnect")
+	ErrDisconnectCalled            = errors.New("disconnect was called")
+	ErrLoginFailure                = errors.New("login failure")
+	ErrMaxReconnectAttemptsReached = errors.New("max attempts to reconnect reached")
 )
 
 // Connect connects to irc-ws.chat.twitch.tv and attempts to reconnect on connection errors.
@@ -39,43 +40,43 @@ func (c *Client) Connect() error {
 
 	for {
 		err = c.connect(u)
+		if c.config.Connection.reconnect {
+			switch err {
+			case errReconnect:
+				const overflowPoint = 64 // technically 63, but using i - 1
 
-		switch err {
-		case errReconnect:
-			const overflowPoint = 64 // technically 63, but using i - 1
+				var i int = c.reconnectCounter
+				c.reconnectCounter++
+				// in case of overflow, reset to overflow point in order to maintain max interval
+				if c.reconnectCounter < 0 {
+					c.reconnectCounter = overflowPoint
+				}
 
-			var i int = c.reconnectCounter
-			c.reconnectCounter++
-			// in case of overflow, reset to overflow point in order to maintain max interval
-			if c.reconnectCounter < 0 {
-				c.reconnectCounter = overflowPoint
-			}
+				if maxReconnectAttempts >= 0 && i >= maxReconnectAttempts {
+					c.callDone(ErrMaxReconnectAttemptsReached)
+					return err
+				}
 
-			if maxReconnectAttempts >= 0 && i >= maxReconnectAttempts {
-				err = errors.New("max attempts to reconnect reached")
+				var sleepDuration time.Duration
+				if i == 0 {
+					continue // immediate reconnect on first attempt
+				} else if i > 0 && i < overflowPoint {
+					// i - 1 because math.Pow(2, 0) == 1
+					sleepDuration = time.Duration(math.Pow(2, float64(i-1)))
+				} else {
+					sleepDuration = maxReconnectInterval
+				}
+
+				if sleepDuration > maxReconnectInterval {
+					sleepDuration = maxReconnectInterval
+				}
+
+				time.Sleep(sleepDuration)
+
+			default:
 				c.callDone(err)
 				return err
 			}
-
-			var sleepDuration time.Duration
-			if i == 0 {
-				continue // immediate reconnect on first attempt
-			} else if i > 0 && i < overflowPoint {
-				// i - 1 because math.Pow(2, 0) == 1
-				sleepDuration = time.Duration(math.Pow(2, float64(i-1)))
-			} else {
-				sleepDuration = maxReconnectInterval
-			}
-
-			if sleepDuration > maxReconnectInterval {
-				sleepDuration = maxReconnectInterval
-			}
-
-			time.Sleep(sleepDuration)
-
-		default:
-			c.callDone(err)
-			return err
 		}
 	}
 }

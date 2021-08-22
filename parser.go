@@ -137,10 +137,12 @@ func parseUnsetMessage(ircData IRCData) UnsetMessage {
 
 func parseClearChatMessage(data IRCData) ClearChatMessage {
 	var clearChatMessage = ClearChatMessage{
-		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Type:    CLEARCHAT,
+	}
+	if len(data.Params) > 0 {
+		clearChatMessage.Channel = data.Params[0]
 	}
 
 	// for growing string builder
@@ -188,12 +190,14 @@ func parseClearChatMessage(data IRCData) ClearChatMessage {
 
 func parseClearMsgMessage(data IRCData) ClearMsgMessage {
 	var clearMsgMessage = ClearMsgMessage{
-		Channel:     data.Params[0],
 		Data:        data,
 		IRCType:     data.Command,
 		Type:        CLEARMSG,
 		Login:       data.Tags["login"],
 		TargetMsgID: data.Tags["target-msg-id"],
+	}
+	if len(data.Params) > 0 {
+		clearMsgMessage.Channel = data.Params[0]
 	}
 
 	if len(data.Params) == 2 {
@@ -215,11 +219,14 @@ func parseGlobalUserstateMessage(data IRCData) GlobalUserstateMessage {
 
 func parseHostTargetMessage(data IRCData) HostTargetMessage {
 	var hostTargetMessage = HostTargetMessage{
-		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Type:    HOSTTARGET,
 	}
+	if len(data.Params) > 0 {
+		hostTargetMessage.Channel = data.Params[0]
+	}
+
 	// for growing string builder
 	var bAlloc = len(hostTargetMessage.Channel)
 
@@ -265,11 +272,13 @@ func parseHostTargetMessage(data IRCData) HostTargetMessage {
 
 func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 	var noticeMessage = NoticeMessage{
-		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Notice:  "notice",
 		Type:    NOTICE,
+	}
+	if len(data.Params) > 0 {
+		noticeMessage.Channel = data.Params[0]
 	}
 
 	var msg string
@@ -390,11 +399,13 @@ func parseReconnectMessage(data IRCData) ReconnectMessage {
 
 func parseRoomstateMessage(data IRCData) RoomstateMessage {
 	var roomstateMessage = RoomstateMessage{
-		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Type:    ROOMSTATE,
 		States:  make(map[string]RoomState),
+	}
+	if len(data.Params) > 0 {
+		roomstateMessage.Channel = data.Params[0]
 	}
 
 	var modeTags = [6]string{
@@ -437,13 +448,15 @@ func parseRoomstateMessage(data IRCData) RoomstateMessage {
 
 func parseUsernoticeMessage(data IRCData) UsernoticeMessage {
 	var usernoticeMessage = UsernoticeMessage{
-		Channel:   data.Params[0],
 		Data:      data,
 		IRCType:   data.Command,
 		Type:      USERNOTICE,
 		MsgParams: make(IRCTags),
 		SystemMsg: data.Tags["system-msg"],
 		User:      parseUser(data.Tags, data.Prefix),
+	}
+	if len(data.Params) > 0 {
+		usernoticeMessage.Channel = data.Params[0]
 	}
 
 	if len(data.Params) == 2 {
@@ -462,14 +475,17 @@ func parseUsernoticeMessage(data IRCData) UsernoticeMessage {
 }
 
 func parseUserstateMessage(data IRCData) UserstateMessage {
-	return UserstateMessage{
-		Channel:   data.Params[0],
+	var userstateMessage = UserstateMessage{
 		Data:      data,
 		IRCType:   data.Command,
 		Type:      USERSTATE,
 		EmoteSets: parseEmoteSets(data.Tags),
 		User:      parseUser(data.Tags, data.Prefix),
 	}
+	if len(data.Params) > 0 {
+		userstateMessage.Channel = data.Params[0]
+	}
+	return userstateMessage
 }
 
 func parseNamesMessage(data IRCData) NamesMessage {
@@ -489,23 +505,29 @@ func parseNamesMessage(data IRCData) NamesMessage {
 }
 
 func parseJoinMessage(data IRCData) JoinMessage {
-	return JoinMessage{
-		Channel:  data.Params[0],
+	var joinMessage = JoinMessage{
 		Data:     data,
 		IRCType:  data.Command,
 		Type:     JOIN,
 		Username: parseUsernameFromPrefix(data.Prefix),
 	}
+	if len(data.Params) > 0 {
+		joinMessage.Channel = data.Params[0]
+	}
+	return joinMessage
 }
 
 func parsePartMessage(data IRCData) PartMessage {
-	return PartMessage{
-		Channel:  data.Params[0],
+	var partMessage = PartMessage{
 		Data:     data,
 		IRCType:  data.Command,
 		Type:     PART,
 		Username: parseUsernameFromPrefix(data.Prefix),
 	}
+	if len(data.Params) > 0 {
+		partMessage.Channel = data.Params[0]
+	}
+	return partMessage
 }
 
 func parsePingMessage(data IRCData) PingMessage {
@@ -534,12 +556,14 @@ func parsePongMessage(data IRCData) PongMessage {
 
 func parsePrivateMessage(data IRCData) PrivateMessage {
 	var privateMessage = PrivateMessage{
-		Channel: data.Params[0],
 		Data:    data,
 		IRCType: data.Command,
 		Type:    PRIVMSG,
 		ID:      data.Tags["id"],
 		User:    parseUser(data.Tags, data.Prefix),
+	}
+	if len(data.Params) > 0 {
+		privateMessage.Channel = data.Params[0]
 	}
 
 	if len(data.Params) == 2 {
@@ -573,8 +597,10 @@ func parseWhisperMessage(data IRCData) WhisperMessage {
 		IRCType: data.Command,
 		Type:    WHISPER,
 		ID:      data.Tags["message-id"],
-		Target:  data.Params[0],
 		User:    parseUser(data.Tags, data.Prefix),
+	}
+	if len(data.Params) > 0 {
+		whisperMessage.Target = data.Params[0]
 	}
 
 	if len(data.Params) == 2 {

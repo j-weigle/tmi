@@ -10,68 +10,31 @@ var (
 )
 
 func (c *Client) handleIRCMessage(rawMessage string) error {
-	var ircData, errParseIRC = parseIRCMessage(rawMessage)
-	var parseUnset = func() error {
-		if c.handlers.onUnsetMessage != nil {
-			var unsetMessage = parseUnsetMessage(ircData)
-			c.handlers.onUnsetMessage(unsetMessage)
-		}
+	var data, errParseIRC = parseIRCMessage(rawMessage)
+	if errParseIRC != nil {
+		return c.unsetHandler(data)
+	}
+
+	var err = c.tmiHandlers(data)
+	if err == ErrUnsetIRCCommand {
+		return c.unsetHandler(data)
+	}
+	if err == ErrUnrecognizedIRCCommand {
+		c.warnUser(errors.New("unrecognized message with { " + data.Prefix + " } prefix:\n" + rawMessage))
 		return nil
 	}
-	if errParseIRC != nil {
-		return parseUnset()
-	}
-
-	var err error
-	switch ircData.Prefix {
-	case "tmi.twitch.tv":
-		err = c.tmiTwitchTvHandlers(ircData)
-		if err == ErrUnsetIRCCommand {
-			return parseUnset()
-		}
-		if err == ErrUnrecognizedIRCCommand {
-			c.warnUser(errors.New("unrecognized message with tmi.twitch.tv prefix:\n" + rawMessage))
-			return nil
-		}
-		return err
-	case "jtv":
-		err = c.jtvHandlers(ircData)
-		if err == ErrUnsetIRCCommand {
-			return parseUnset()
-		}
-		if err == ErrUnrecognizedIRCCommand {
-			c.warnUser(errors.New("unrecognized message with jtv prefix:\n" + rawMessage))
-			return nil
-		}
-		return err
-	default:
-		err = c.otherHandlers(ircData)
-		if err == ErrUnsetIRCCommand {
-			return parseUnset()
-		}
-		if err == ErrUnrecognizedIRCCommand {
-			c.warnUser(errors.New("unrecognized message with { " + ircData.Prefix + " } prefix:\n" + rawMessage))
-			return nil
-		}
-		return err
-	}
+	return err
 }
 
-func (c *Client) tmiTwitchTvHandlers(data IRCData) error {
-	switch data.Command {
-	// UNIMPLEMENTED
-	// 002 ; RPL_YOURHOST  RFC2812 ; "Your host is tmi.twitch.tv"
-	// 003 ; RPL_CREATED   RFC2812 ; "This server is rather new"
-	// 004 ; RPL_MYINFO    RFC2812 ; "-" ; part of post registration greeting
-	// 375 ; RPL_MOTDSTART RFC1459 ; "-" ;  start message of the day
-	// 372 ; RPL_MOTD      RFC1459 ; "You are in a maze of twisty passages, all alike" ; message of the day
-	// 376 ; RPL_ENDOFMOTD RFC1459 ; "\u003e" which is a > ; end message of the day
-	// CAP ; CAP * ACK ; acknowledgement of membership
-	// 421 ; ERR_UNKNOWNCOMMAND RFC1459 ; invalid IRC Command
-	case "002", "003", "004", "375", "372", "376", "CAP", "SERVERCHANGE", "421":
-		return ErrUnsetIRCCommand
+func (c *Client) unsetHandler(data IRCData) error {
+	if c.handlers.onUnsetMessage != nil {
+		c.handlers.onUnsetMessage(parseUnsetMessage(data))
+	}
+	return nil
+}
 
-	// IMPLEMENTED
+func (c *Client) tmiHandlers(data IRCData) error {
+	switch data.Command {
 	case "001": // RPL_WELCOME        RFC2812 ; "Welcome, GLHF"
 		c.connected.set(true)
 		go c.onConnectedJoins()
@@ -145,35 +108,6 @@ func (c *Client) tmiTwitchTvHandlers(data IRCData) error {
 		}
 		return nil
 
-	// NOT RECOGNIZED
-	default:
-		return ErrUnrecognizedIRCCommand
-	}
-}
-
-func (c *Client) jtvHandlers(data IRCData) error {
-	switch data.Command {
-	// UNIMPLEMENTED
-	case "MODE": // deprecated
-		return ErrUnsetIRCCommand
-
-	// IMPLEMENTED
-	// nil
-
-	// NOT RECOGNIZED
-	default:
-		return ErrUnrecognizedIRCCommand
-	}
-}
-
-func (c *Client) otherHandlers(data IRCData) error {
-	switch data.Command {
-	// UNIMPLEMENTED
-	// 366 ; RPL_ENDOFNAMES RFC1459 ; end of NAMES
-	case "366":
-		return ErrUnsetIRCCommand
-
-	// IMPLEMENTED
 	case "353": // RPL_NAMREPLY RFC1459 ; aka NAMES on twitch dev docs
 		// WARNING: deprecated, but not removed yet
 		if c.handlers.onNamesMessage != nil {
@@ -194,17 +128,25 @@ func (c *Client) otherHandlers(data IRCData) error {
 		return nil
 
 	case "PING":
-		if len(data.Params) > 0 {
-			c.send("PONG :" + data.Params[0])
+		var pingMessage = parsePingMessage(data)
+		if pingMessage.Text != "" {
+			c.send("PONG :" + pingMessage.Text)
+		}
+		if c.handlers.onPingMessage != nil {
+			c.handlers.onPingMessage(parsePingMessage(data))
 		}
 		return nil
 
 	case "PONG":
-		if data.Raw == "PONG :"+pingSignature {
+		var pongMessage = parsePongMessage(data)
+		if pongMessage.Text == pingSignature {
 			select {
 			case c.rcvdPong <- struct{}{}:
 			default:
 			}
+		}
+		if c.handlers.onPongMessage != nil {
+			c.handlers.onPongMessage(parsePongMessage(data))
 		}
 		return nil
 
@@ -219,6 +161,31 @@ func (c *Client) otherHandlers(data IRCData) error {
 			c.handlers.onWhisperMessage(parseWhisperMessage(data))
 		}
 		return nil
+
+	// UNIMPLEMENTED
+	// ------------------
+	// tmi.twitch.tv
+	// ------------------
+	// 002  ; RPL_YOURHOST  RFC2812 ; "Your host is tmi.twitch.tv"
+	// 003  ; RPL_CREATED   RFC2812 ; "This server is rather new"
+	// 004  ; RPL_MYINFO    RFC2812 ; "-" ; part of post registration greeting
+	// 375  ; RPL_MOTDSTART RFC1459 ; "-" ;  start message of the day
+	// 372  ; RPL_MOTD      RFC1459 ; "You are in a maze of twisty passages, all alike" ; message of the day
+	// 376  ; RPL_ENDOFMOTD RFC1459 ; "\u003e" which is a > ; end message of the day
+	// CAP  ; CAP * ACK ; acknowledgement of membership
+	// 421  ; ERR_UNKNOWNCOMMAND RFC1459 ; invalid IRC Command
+	//
+	// ------------------
+	// jtv
+	// ------------------
+	// MODE ; deprecated
+	//
+	// ------------------
+	// other or no prefix
+	// ------------------
+	// 366 ; RPL_ENDOFNAMES RFC1459 ; end of NAMES
+	case "002", "003", "004", "375", "372", "376", "CAP", "SERVERCHANGE", "421", "MODE", "366":
+		return ErrUnsetIRCCommand
 
 	// NOT RECOGNIZED
 	default:

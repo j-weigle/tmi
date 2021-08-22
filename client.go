@@ -106,7 +106,9 @@ func (c *Client) connect(u url.URL) error {
 
 	// Start the pinger in a separate goroutine.
 	// It will ping c.conn after it hasn't received a message for c.config.Pinger.interval.
-	c.spawnPinger(ctx, wg, closeErrCb)
+	if c.config.Pinger.enabled {
+		c.spawnPinger(ctx, wg, closeErrCb)
+	}
 
 	// Block and wait for a Disconnect() call or a connection error.
 	c.readInbound(ctx, closeErrCb)

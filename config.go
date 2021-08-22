@@ -26,6 +26,7 @@ type identityConfig struct {
 }
 
 type pingConfig struct {
+	enabled  bool          // whether to send pings or not
 	interval time.Duration // how long to wait before sending a ping when no messages have been received
 	timeout  time.Duration // how long to wait on a pong before reconnecting
 }
@@ -110,12 +111,23 @@ func (id *identityConfig) SetUsername(username string) {
 
 // Default sets the ping configuration options to their recommended defaults.
 func (p *pingConfig) Default() {
+	p.enabled = true
 	p.interval = time.Minute
 	p.timeout = time.Second * 5
 }
 
-// Set sets the idle wait time and timeout for ping configuration p.
-func (p *pingConfig) Set(wait, timeout time.Duration) {
-	p.interval = wait
+// Disable sending pings
+func (p *pingConfig) Disable() {
+	p.enabled = false
+}
+
+// Enable sending pings
+func (p *pingConfig) Enable() {
+	p.enabled = true
+}
+
+// Set sets the idle wait time and timeout for ping configuration.
+func (p *pingConfig) Set(interval, timeout time.Duration) {
+	p.interval = interval
 	p.timeout = timeout
 }

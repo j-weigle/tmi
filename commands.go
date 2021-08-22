@@ -15,7 +15,7 @@ const (
 
 var (
 	errReconnect        = errors.New("reconnect")
-	ErrDisconnectCalled = errors.New("client Disconnect() was called")
+	ErrDisconnectCalled = errors.New("disconnect was called")
 	ErrLoginFailure     = errors.New("login failure")
 )
 

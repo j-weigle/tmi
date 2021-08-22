@@ -502,6 +502,30 @@ func parsePartMessage(data IRCData) PartMessage {
 	}
 }
 
+func parsePingMessage(data IRCData) PingMessage {
+	var pingMessage = PingMessage{
+		Data:    data,
+		IRCType: data.Command,
+		Type:    PING,
+	}
+	if len(data.Params) == 1 {
+		pingMessage.Text = data.Params[0]
+	}
+	return pingMessage
+}
+
+func parsePongMessage(data IRCData) PongMessage {
+	var pongMessage = PongMessage{
+		Data:    data,
+		IRCType: data.Command,
+		Type:    PONG,
+	}
+	if len(data.Params) == 2 {
+		pongMessage.Text = data.Params[1]
+	}
+	return pongMessage
+}
+
 func parsePrivateMessage(data IRCData) PrivateMessage {
 	var privateMessage = PrivateMessage{
 		Channel: data.Params[0],

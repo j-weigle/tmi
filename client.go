@@ -109,8 +109,8 @@ func (c *Client) connect(u url.URL) error {
 		c.spawnPinger(ctx, wg, closeErrCb)
 	}
 
-	// Block and wait for a Disconnect() call or a connection error.
-	c.readInbound(ctx, closeErrCb)
+	// Block and wait for a disconnect call or a connection error.
+	c.listenAndParse(ctx, closeErrCb)
 
 	// Make sure reader, writer, and pinger have finished.
 	wg.Wait()
@@ -160,7 +160,7 @@ func (c *Client) onConnectedJoins() {
 	c.joinChannels(channels)
 }
 
-func (c *Client) readInbound(ctx context.Context, closeErrCb func(error)) {
+func (c *Client) listenAndParse(ctx context.Context, closeErrCb func(error)) {
 	for {
 		select {
 		case <-c.notifDisconnect.ch:

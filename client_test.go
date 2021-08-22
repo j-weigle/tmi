@@ -5,35 +5,35 @@ import (
 	"testing"
 )
 
-func TestReadInbound(t *testing.T) {
-	var client = NewClient(NewClientConfig())
+func TestListenAndParse(t *testing.T) {
+	var c = NewClient(NewClientConfig())
 
 	// Disconnect called
 	var ctx, cancelFunc = context.WithCancel(context.Background())
-	client.notifDisconnect.reset()
+	c.notifDisconnect.reset()
 	var closeErr = connCloseErr{}
 	var closeErrCb = func(errReason error) {
 		closeErr.update(errReason)
 	}
 
-	client.notifDisconnect.notify()
+	c.notifDisconnect.notify()
 
-	client.readInbound(ctx, closeErrCb)
+	c.listenAndParse(ctx, closeErrCb)
 
 	if closeErr.err != ErrDisconnectCalled {
 		t.Errorf("expected error: %v, got error: %v", ErrDisconnectCalled, closeErr.err)
 	}
 
 	// RECONNECT message received
-	client.notifDisconnect.reset()
+	c.notifDisconnect.reset()
 	closeErr = connCloseErr{}
 	closeErrCb = func(errReason error) {
 		closeErr.update(errReason)
 	}
 
-	client.inbound <- ":tmi.twitch.tv RECONNECT"
+	c.inbound <- ":tmi.twitch.tv RECONNECT"
 
-	client.readInbound(ctx, closeErrCb)
+	c.listenAndParse(ctx, closeErrCb)
 
 	if closeErr.err != errReconnect {
 		t.Errorf("expected error: %v, got error: %v", errReconnect, closeErr.err)
@@ -47,7 +47,7 @@ func TestReadInbound(t *testing.T) {
 
 	cancelFunc()
 
-	client.readInbound(ctx, closeErrCb)
+	c.listenAndParse(ctx, closeErrCb)
 
 	if closeErr.err != nil {
 		t.Errorf("expected error: nil, got error: %v", closeErr.err)

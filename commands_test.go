@@ -57,15 +57,14 @@ func TestJoinThreeChannels(t *testing.T) {
 	go func() {
 		// join waits 600 milliseconds between joins, give it extra time
 		time.Sleep(time.Second * 3)
+		for _, test := range tests {
+			if joined, ok := results[test]; !(ok && joined) {
+				t.Errorf("did not join %v", test)
+			}
+		}
 		c.Disconnect()
 	}()
 	c.Connect()
-
-	for _, test := range tests {
-		if joined, ok := results[test]; !(ok && joined) {
-			t.Errorf("did not join %v", test)
-		}
-	}
 }
 
 func TestPartChannels(t *testing.T) {

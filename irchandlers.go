@@ -21,7 +21,7 @@ func (c *Client) handleIRCMessage(rawMessage string) error {
 	}
 	if err == ErrUnrecognizedIRCCommand {
 		c.warnUser(errors.New("unrecognized message with { " + data.Prefix + " } prefix:\n" + rawMessage))
-		return nil
+		return c.unsetHandler(data)
 	}
 	return err
 }
@@ -71,14 +71,7 @@ func (c *Client) tmiHandlers(data IRCData) error {
 		return nil
 
 	case "NOTICE":
-		var err error
-		var noticeMessage, parseErr = parseNoticeMessage(data)
-		if parseErr != nil {
-			c.warnUser(parseErr)
-			if noticeMessage.MsgID == "login_failure" {
-				err = ErrLoginFailure
-			}
-		}
+		var noticeMessage, err = parseNoticeMessage(data)
 		if c.handlers.onNoticeMessage != nil {
 			c.handlers.onNoticeMessage(noticeMessage)
 		}

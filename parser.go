@@ -297,15 +297,19 @@ func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 
 		// Moderators of the channel, or none
 		case "no_mods":
+			// There are no moderators for this room.
 			noticeMessage.Notice = "mods"
 		case "room_mods":
+			// The moderators of this room are: mod1, mod2, etc
 			noticeMessage.Notice = "mods"
-			noticeMessage.Mods = []string{}
-			var modStr = msg
-			var mods = strings.Split(strings.ToLower(strings.Split(modStr, ": ")[1]), ", ")
-			for _, v := range mods {
-				if v != "" {
-					noticeMessage.Mods = append(noticeMessage.Mods, v)
+			var splMsg = strings.Split(msg, ": ")
+			if len(splMsg) == 2 {
+				var mods = strings.ToLower(splMsg[1])
+				var modList = strings.Split(mods, ", ")
+				for _, mod := range modList {
+					if mod != "" {
+						noticeMessage.Mods = append(noticeMessage.Mods, mod)
+					}
 				}
 			}
 
@@ -327,16 +331,19 @@ func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 
 		// VIPs of the channel, or none
 		case "no_vips":
+			// There are no VIPs for this room.
 			noticeMessage.Notice = "vips"
 		case "vips_success":
+			// The VIPs of this room are: VIP1, VIP2, etc
 			noticeMessage.Notice = "vips"
-			noticeMessage.VIPs = []string{}
-			var vipStr = msg
-			vipStr = strings.TrimSuffix(vipStr, ".")
-			var vips = strings.Split(strings.ToLower(strings.Split(vipStr, ": ")[1]), ", ")
-			for _, v := range vips {
-				if v != "" {
-					noticeMessage.VIPs = append(noticeMessage.VIPs, v)
+			var splMsg = strings.Split(msg, ": ")
+			if len(splMsg) == 2 {
+				var vips = strings.ToLower(splMsg[1])
+				var vipList = strings.Split(vips, ", ")
+				for _, vip := range vipList {
+					if vip != "" {
+						noticeMessage.VIPs = append(noticeMessage.VIPs, vip)
+					}
 				}
 			}
 
@@ -364,11 +371,10 @@ func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 		for _, failure := range loginFailures {
 			if strings.Contains(msg, failure) {
 				noticeMessage.MsgID = "login_failure"
-				return noticeMessage, errors.New(msg)
+				return noticeMessage, ErrLoginFailure
 			}
 		}
 		noticeMessage.MsgID = "parse_error"
-		return noticeMessage, errors.New("could not properly parse NOTICE:\n" + data.Raw)
 	}
 
 	return noticeMessage, nil

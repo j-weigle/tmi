@@ -444,3 +444,81 @@ func TestParseGlobalUserstateMessage(t *testing.T) {
 		}
 	}
 }
+
+func TestParseHostTargetMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want HostTargetMessage
+	}{
+		{
+			":tmi.twitch.tv HOSTTARGET #hosting_channel :-",
+			HostTargetMessage{
+				Channel: "#hosting_channel",
+				IRCType: "HOSTTARGET",
+				Text:    "#hosting_channel exited host mode",
+				Type:    HOSTTARGET,
+				Hosted:  "",
+				Viewers: 0,
+			},
+		},
+		{
+			":tmi.twitch.tv HOSTTARGET #hosting_channel :- 5",
+			HostTargetMessage{
+				Channel: "#hosting_channel",
+				IRCType: "HOSTTARGET",
+				Text:    "#hosting_channel exited host mode with 5 viewers",
+				Type:    HOSTTARGET,
+				Hosted:  "",
+				Viewers: 5,
+			},
+		},
+		{
+			":tmi.twitch.tv HOSTTARGET #hosting_channel :channel",
+			HostTargetMessage{
+				Channel: "#hosting_channel",
+				IRCType: "HOSTTARGET",
+				Text:    "#hosting_channel is now hosting channel",
+				Type:    HOSTTARGET,
+				Hosted:  "channel",
+				Viewers: 0,
+			},
+		},
+		{
+			":tmi.twitch.tv HOSTTARGET #hosting_channel :channel 16",
+			HostTargetMessage{
+				Channel: "#hosting_channel",
+				IRCType: "HOSTTARGET",
+				Text:    "#hosting_channel is now hosting channel with 16 viewers",
+				Type:    HOSTTARGET,
+				Hosted:  "channel",
+				Viewers: 16,
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseHostTargetMessage(ircData)
+
+		if got.Channel != test.want.Channel {
+			t.Errorf("Channel: got %v, want %v", got.Channel, test.want.Channel)
+		}
+		if got.IRCType != test.want.IRCType {
+			t.Errorf("IRCType: got %v, want %v", got.IRCType, test.want.IRCType)
+		}
+		if got.Text != test.want.Text {
+			t.Errorf("Text: got %v, want %v", got.Text, test.want.Text)
+		}
+		if got.Type != test.want.Type {
+			t.Errorf("Type: got %v, want %v", got.Type, test.want.Type)
+		}
+		if got.Hosted != test.want.Hosted {
+			t.Errorf("Hosted: got %v, want %v", got.Hosted, test.want.Hosted)
+		}
+		if got.Viewers != test.want.Viewers {
+			t.Errorf("Viewers: got %v, want %v", got.Viewers, test.want.Viewers)
+		}
+	}
+}

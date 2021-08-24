@@ -238,14 +238,13 @@ func parseHostTargetMessage(data IRCData) HostTargetMessage {
 		} else {
 			hostTargetMessage.Hosted = fields[0]
 			bAlloc += len(hostTargetMessage.Hosted) // " is now hosting {hosted}"
-
-			if len(fields) == 2 {
-				viewers = fields[1]
-				if v, err := strconv.Atoi(viewers); err == nil {
-					hostTargetMessage.Viewers = v
-				}
-				bAlloc += len(viewers) + 13 // " for {viewers} viewers"
+		}
+		if len(fields) == 2 {
+			viewers = fields[1]
+			if v, err := strconv.Atoi(viewers); err == nil {
+				hostTargetMessage.Viewers = v
 			}
+			bAlloc += len(viewers) + 14 // " with {viewers} viewers"
 		}
 	}
 
@@ -257,13 +256,13 @@ func parseHostTargetMessage(data IRCData) HostTargetMessage {
 		b.WriteString(" is now hosting ")
 		b.WriteString(hostTargetMessage.Hosted)
 
-		if viewers != "" {
-			b.WriteString(" for ")
-			b.WriteString(viewers)
-			b.WriteString(" viewers")
-		}
 	} else {
 		b.WriteString(" exited host mode")
+	}
+	if viewers != "" {
+		b.WriteString(" with ")
+		b.WriteString(viewers)
+		b.WriteString(" viewers")
 	}
 	hostTargetMessage.Text = b.String()
 

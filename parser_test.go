@@ -368,7 +368,7 @@ func TestParseClearMsgMessage(t *testing.T) {
 	}
 }
 
-func TestGlobalUserstateMessage(t *testing.T) {
+func TestParseGlobalUserstateMessage(t *testing.T) {
 	tests := []struct {
 		in   string
 		want GlobalUserstateMessage

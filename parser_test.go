@@ -31,6 +31,48 @@ func (d1 *IRCData) equals(d2 *IRCData) bool {
 	return true
 }
 
+func (u1 *User) equals(u2 *User) bool {
+	if u1.BadgeInfo != u2.BadgeInfo {
+		return false
+	}
+	for i, badge := range u1.Badges {
+		if badge != u2.Badges[i] {
+			return false
+		}
+	}
+	if u1.Broadcaster != u2.Broadcaster {
+		return false
+	}
+	if u1.Color != u2.Color {
+		return false
+	}
+	if u1.DisplayName != u2.DisplayName {
+		return false
+	}
+	if u1.Mod != u2.Mod {
+		return false
+	}
+	if u1.Name != u2.Name {
+		return false
+	}
+	if u1.Subscriber != u2.Subscriber {
+		return false
+	}
+	if u1.Turbo != u2.Turbo {
+		return false
+	}
+	if u1.ID != u2.ID {
+		return false
+	}
+	if u1.UserType != u2.UserType {
+		return false
+	}
+	if u1.VIP != u2.VIP {
+		return false
+	}
+	return true
+}
+
 func TestParseIRCMessage(t *testing.T) {
 	t.Parallel()
 	type parseIRCTest struct {
@@ -322,6 +364,83 @@ func TestParseClearMsgMessage(t *testing.T) {
 		}
 		if got.TargetMsgID != test.want.TargetMsgID {
 			t.Errorf("TargetMsgID: got %v, want %v", got.TargetMsgID, test.want.TargetMsgID)
+		}
+	}
+}
+
+func TestGlobalUserstateMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want GlobalUserstateMessage
+	}{
+		{
+			"@badge-info=<badge-info>;badges=<badge>/1;color=<color>;display-name=<display-name>;emote-sets=<emote-sets>;turbo=<turbo>;user-id=<user-id>;user-type=<user-type> :tmi.twitch.tv GLOBALUSERSTATE",
+			GlobalUserstateMessage{
+				IRCType:   "GLOBALUSERSTATE",
+				Type:      GLOBALUSERSTATE,
+				EmoteSets: []string{"<emote-sets>"},
+				User: &User{
+					BadgeInfo: "<badge-info>",
+					Badges: []Badge{
+						{"<badge>", 1},
+					},
+					Broadcaster: false,
+					Color:       "<color>",
+					DisplayName: "<display-name>",
+					Mod:         false,
+					Name:        "<display-name>",
+					Subscriber:  false,
+					Turbo:       false,
+					ID:          "<user-id>",
+					UserType:    "<user-type>",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			"@badge-info=subscriber/8;badges=subscriber/6;color=#0D4200;display-name=dallas;emote-sets=0,33,50,237,793,2126,3517,4578,5569,9400,10337,12239;turbo=0;user-id=1337;user-type=admin :tmi.twitch.tv GLOBALUSERSTATE",
+			GlobalUserstateMessage{
+				IRCType:   "GLOBALUSERSTATE",
+				Type:      GLOBALUSERSTATE,
+				EmoteSets: []string{"0", "33", "50", "237", "793", "2126", "3517", "4578", "5569", "9400", "10337", "12239"},
+				User: &User{
+					BadgeInfo: "subscriber/8",
+					Badges: []Badge{
+						{"subscriber", 6},
+					},
+					Broadcaster: false,
+					Color:       "#0D4200",
+					DisplayName: "dallas",
+					Mod:         false,
+					Name:        "dallas",
+					Subscriber:  true,
+					Turbo:       false,
+					ID:          "1337",
+					UserType:    "admin",
+					VIP:         false,
+				},
+			},
+		},
+	}
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseGlobalUserstateMessage(ircData)
+
+		if got.IRCType != test.want.IRCType {
+			t.Errorf("IRCType: got %v, want %v", got.IRCType, test.want.IRCType)
+		}
+		if got.Type != test.want.Type {
+			t.Errorf("Type: got %v, want %v", got.Type, test.want.Type)
+		}
+		for i, emote := range got.EmoteSets {
+			if emote != test.want.EmoteSets[i] {
+				t.Errorf("EmoteSets: got %v, want %v", emote, test.want.EmoteSets[i])
+			}
+		}
+		if !got.User.equals(test.want.User) {
+			t.Errorf("User: got %v, want %v", got.User, test.want.User)
 		}
 	}
 }

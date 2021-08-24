@@ -645,6 +645,15 @@ func parseUser(tags IRCTags, prefix string) *User {
 		if badge.Name == "vip" {
 			user.VIP = true
 		}
+		if badge.Name == "moderator" {
+			user.Mod = true
+		}
+		if badge.Name == "subscriber" {
+			user.Subscriber = true
+		}
+		if badge.Name == "turbo" {
+			user.Turbo = true
+		}
 	}
 
 	return &user

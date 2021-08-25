@@ -5,8 +5,8 @@ import (
 )
 
 var (
-	ErrUnrecognizedIRCCommand = errors.New("unrecognized IRC Command")
-	ErrUnsetIRCCommand        = errors.New("unset IRC Command")
+	errUnrecognizedIRCCommand = errors.New("unrecognized IRC Command")
+	errUnsetIRCCommand        = errors.New("unset IRC Command")
 )
 
 func (c *Client) handleIRCMessage(rawMessage string) error {
@@ -16,7 +16,7 @@ func (c *Client) handleIRCMessage(rawMessage string) error {
 	}
 
 	var err = c.tmiHandlers(data)
-	if err == ErrUnsetIRCCommand || err == ErrUnrecognizedIRCCommand {
+	if err == errUnsetIRCCommand || err == errUnrecognizedIRCCommand {
 		return c.unsetHandler(data)
 	}
 	return err
@@ -174,10 +174,10 @@ func (c *Client) tmiHandlers(data IRCData) error {
 	// ------------------
 	// 366 ; RPL_ENDOFNAMES RFC1459 ; end of NAMES
 	case "002", "003", "004", "375", "372", "376", "CAP", "SERVERCHANGE", "421", "MODE", "366":
-		return ErrUnsetIRCCommand
+		return errUnsetIRCCommand
 
 	// NOT RECOGNIZED
 	default:
-		return ErrUnrecognizedIRCCommand
+		return errUnrecognizedIRCCommand
 	}
 }

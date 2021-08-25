@@ -13,6 +13,7 @@ import (
 
 const pingSignature = "go-tmi-ws"
 
+// Client to configure callbacks and manage the connection.
 type Client struct {
 	channels         map[string]bool
 	channelsMutex    sync.Mutex

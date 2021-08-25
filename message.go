@@ -4,28 +4,43 @@ import (
 	"time"
 )
 
+// MessageType for representing IRC command names.
 type MessageType int
 
 const (
-	// Unknown, unrecognized, or non-handled message types
+	// UNSET for unknown, unrecognized, or non-handled message types
 	UNSET MessageType = iota - 1
-	// tmi.twitch.tv prefixed message types
+	// CLEARCHAT for CLEARCHAT message type
 	CLEARCHAT
+	// CLEARMSG for CLEARMSG message type
 	CLEARMSG
+	// GLOBALUSERSTATE for GLOBALUSERSTATE message type
 	GLOBALUSERSTATE
+	// HOSTTARGET for HOSTTARGET message type
 	HOSTTARGET
+	// NOTICE for NOTICE message type
 	NOTICE
+	// RECONNECT for RECONNECT message type
 	RECONNECT
+	// ROOMSTATE for ROOMSTATE message type
 	ROOMSTATE
+	// USERNOTICE for USERNOTICE message type
 	USERNOTICE
+	// USERSTATE for USERSTATE message type
 	USERSTATE
-	// non tmi.twitch.tv prefixed message types
+	// NAMES for 353 message type
 	NAMES
+	// JOIN for JOIN message type
 	JOIN
+	// PART for PART message type
 	PART
+	// PING for PING message type
 	PING
+	// PONG for PONG message type
 	PONG
+	// PRIVMSG for PRIVMSG message type
 	PRIVMSG
+	// WHISPER for WHISPER message type
 	WHISPER
 )
 
@@ -53,8 +68,10 @@ func (mt MessageType) String() string {
 	}[mt]
 }
 
+// IRCTags for storing tags (when IRC message starts with @)
 type IRCTags map[string]string
 
+// IRCData for data parsed from raw IRC messages.
 type IRCData struct {
 	Raw     string   `json:"raw"`
 	Tags    IRCTags  `json:"tags"`
@@ -63,6 +80,7 @@ type IRCData struct {
 	Params  []string `json:"params"`
 }
 
+// UnsetMessage for unrecognized or unset IRC commands or parsing errors.
 type UnsetMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
@@ -70,7 +88,7 @@ type UnsetMessage struct {
 	Type    MessageType `json:"type"`
 }
 
-// Timeout, ban, or clear all chat
+// ClearChatMessage when a timeout, ban, or clear all chat occurs.
 type ClearChatMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -82,7 +100,7 @@ type ClearChatMessage struct {
 	Target      string        `json:"target"`       // target of the ban, omitted if not a timeout or ban
 }
 
-// Singular message deletion
+// ClearMsgMessage data received on singular message deletion.
 type ClearMsgMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -94,7 +112,7 @@ type ClearMsgMessage struct {
 	TargetMsgID string `json:"target-msg-id"` // msg id of the deleted message
 }
 
-// Information about user that successfully logged in
+// GlobalUserstateMessage data about user that successfully logged in.
 type GlobalUserstateMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
@@ -104,6 +122,7 @@ type GlobalUserstateMessage struct {
 	User      *User    `json:"user"`       // information about the user that logged in
 }
 
+// HostTargetMessage data
 type HostTargetMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -115,6 +134,7 @@ type HostTargetMessage struct {
 	Viewers int    `json:"viewers"` // the number of viewers at channel during the host event
 }
 
+// NoticeMessage data
 type NoticeMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -129,12 +149,14 @@ type NoticeMessage struct {
 	VIPs    []string `json:"vips"`    // list of vips for Channel when Notice is set to vips
 }
 
+// ReconnectMessage data
 type ReconnectMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 }
 
+// RoomstateMessage data
 type RoomstateMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -145,11 +167,13 @@ type RoomstateMessage struct {
 	States map[string]RoomState `json:"states"` // the states in the roomstate tags
 }
 
+// RoomState data for a single room state
 type RoomState struct { // note followers-only: -1 (disabled), 0 (enabled immediate chat), > 0 (enabled number of minutes delay to chat)
 	Enabled bool          `json:"enabled"` // mode turned on or off
 	Delay   time.Duration `json:"delay"`   // seconds between messages (slow), minutes post-follow (followers-only)
 }
 
+// UsernoticeMessage data
 type UsernoticeMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -163,6 +187,7 @@ type UsernoticeMessage struct {
 	User      *User   `json:"user"`       // user who caused the notice
 }
 
+// UserstateMessage data
 type UserstateMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -173,6 +198,7 @@ type UserstateMessage struct {
 	User      *User    `json:"user"`       // user that joined or sent a privmsg
 }
 
+// NamesMessage data
 type NamesMessage struct { // WARNING: deprecated, but not removed yet
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -182,6 +208,7 @@ type NamesMessage struct { // WARNING: deprecated, but not removed yet
 	Users []string `json:"users"` // list of usernames
 }
 
+// JoinMessage data
 type JoinMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -191,6 +218,7 @@ type JoinMessage struct {
 	Username string `json:"username"` // name of joined account
 }
 
+// PartMessage data
 type PartMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -200,6 +228,7 @@ type PartMessage struct {
 	Username string `json:"username"` // name of parted account
 }
 
+// PingMessage data
 type PingMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
@@ -207,6 +236,7 @@ type PingMessage struct {
 	Type    MessageType `json:"type"`
 }
 
+// PongMessage data
 type PongMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
@@ -214,6 +244,7 @@ type PongMessage struct {
 	Type    MessageType `json:"type"`
 }
 
+// PrivateMessage data
 type PrivateMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -229,6 +260,7 @@ type PrivateMessage struct {
 	User   *User   `json:"user"`   // user that sent the message
 }
 
+// ReplyMsgParent is the information provided in tags when a PrivateMessage is a reply.
 type ReplyMsgParent struct {
 	DisplayName string `json:"display-name"`
 	ID          string `json:"id"`   // message id
@@ -237,6 +269,7 @@ type ReplyMsgParent struct {
 	Username    string `json:"username"` // login
 }
 
+// WhisperMessage data
 type WhisperMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
@@ -250,22 +283,26 @@ type WhisperMessage struct {
 	User   *User   `json:"user"`   // message sender
 }
 
+// Badge represents a user chat badge badge/1
 type Badge struct {
 	Name  string `json:"name"`
 	Value int    `json:"value"`
 }
 
+// Emote information provided in tags.
 type Emote struct {
 	ID        string          `json:"id"`
 	Name      string          `json:"name"`
 	Positions []EmotePosition `json:"positions"`
 }
 
+// EmotePosition of emotes when emotes are in chat messages or whispers.
 type EmotePosition struct {
 	EndIdx   int `json:"end-index"`
 	StartIdx int `json:"start-index"`
 }
 
+// User info provided in tags.
 type User struct {
 	BadgeInfo   string  `json:"badge-info"`
 	Badges      []Badge `json:"badges"`

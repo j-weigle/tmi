@@ -14,9 +14,12 @@ const (
 )
 
 var (
-	errReconnect                   = errors.New("reconnect")
-	ErrDisconnectCalled            = errors.New("disconnect was called")
-	ErrLoginFailure                = errors.New("login failure")
+	errReconnect = errors.New("reconnect")
+	// ErrDisconnectCalled is returned from Connect and in OnDone when the client calls disconnect.
+	ErrDisconnectCalled = errors.New("disconnect was called")
+	// ErrLoginFailure is returned from Connect and in OnDone when the client receives a NOTICE message about a login failure.
+	ErrLoginFailure = errors.New("login failure")
+	// ErrMaxReconnectAttemptsReached is returned from Connect and in OnDone when the client has attempted to reconnect the maximum number of times alloted by its config.
 	ErrMaxReconnectAttemptsReached = errors.New("max attempts to reconnect reached")
 )
 
@@ -115,7 +118,7 @@ func (c *Client) Join(channels ...string) error {
 	return nil
 }
 
-// Done sets the callback function for when a client is done to cb. Useful for running a client in a goroutine.
+// OnDone sets the callback function for when a client is done to cb. Useful for running a client in a goroutine.
 func (c *Client) OnDone(cb func(fatal error)) {
 	c.done = cb
 }
@@ -161,57 +164,92 @@ func (c *Client) UpdatePassword(password string) {
 	c.config.Identity.SetPassword(password)
 }
 
+// OnUnsetMessage sets the callback for when an unrecognized, non-handled, or unparsable message type is received.
 func (c *Client) OnUnsetMessage(cb func(UnsetMessage)) {
 	c.handlers.onUnsetMessage = cb
 }
+
+// OnConnected sets the callback for when the client successfully connects.
 func (c *Client) OnConnected(cb func()) {
 	c.handlers.onConnected = cb
 }
+
+// OnClearChatMessage sets the callback for when a CLEARCHAT message is received.
 func (c *Client) OnClearChatMessage(cb func(ClearChatMessage)) {
 	c.handlers.onClearChatMessage = cb
 }
+
+// OnClearMsgMessage sets the callback for when a CLEARMSG message is received.
 func (c *Client) OnClearMsgMessage(cb func(ClearMsgMessage)) {
 	c.handlers.onClearMsgMessage = cb
 }
+
+// OnGlobalUserstateMessage sets the callback for when a GLOBALUSERSTATE message is received.
 func (c *Client) OnGlobalUserstateMessage(cb func(GlobalUserstateMessage)) {
 	c.handlers.onGlobalUserstateMessage = cb
 }
+
+// OnHostTargetMessage sets the callback for when a HOSTTARGET message is received.
 func (c *Client) OnHostTargetMessage(cb func(HostTargetMessage)) {
 	c.handlers.onHostTargetMessage = cb
 }
+
+// OnNoticeMessage sets the callback for when a NOTICE message is received.
 func (c *Client) OnNoticeMessage(cb func(NoticeMessage)) {
 	c.handlers.onNoticeMessage = cb
 }
+
+// OnReconnectMessage sets the callback for when a RECONNECT message is received.
 func (c *Client) OnReconnectMessage(cb func(ReconnectMessage)) {
 	c.handlers.onReconnectMessage = cb
 }
+
+// OnRoomstateMessage sets the callback for when a ROOMSTATE message is received.
 func (c *Client) OnRoomstateMessage(cb func(RoomstateMessage)) {
 	c.handlers.onRoomstateMessage = cb
 }
+
+// OnUserNoticeMessage sets the callback for when a USERNOTICE message is received.
 func (c *Client) OnUserNoticeMessage(cb func(UsernoticeMessage)) {
 	c.handlers.onUserNoticeMessage = cb
 }
+
+// OnUserstateMessage sets the callback for when a USERSTATE message is received.
 func (c *Client) OnUserstateMessage(cb func(UserstateMessage)) {
 	c.handlers.onUserstateMessage = cb
 }
+
+// OnNamesMessage sets the callback for when a 353 message is received.
 func (c *Client) OnNamesMessage(cb func(NamesMessage)) {
 	c.handlers.onNamesMessage = cb
 }
+
+// OnJoinMessage sets the callback for when a JOIN message is received.
 func (c *Client) OnJoinMessage(cb func(JoinMessage)) {
 	c.handlers.onJoinMessage = cb
 }
+
+// OnPartMessage sets the callback for when a PART message is received.
 func (c *Client) OnPartMessage(cb func(PartMessage)) {
 	c.handlers.onPartMessage = cb
 }
+
+// OnPingMessage sets the callback for when a PING message is received.
 func (c *Client) OnPingMessage(cb func(PingMessage)) {
 	c.handlers.onPingMessage = cb
 }
+
+// OnPongMessage sets the callback for when a PONG message is received.
 func (c *Client) OnPongMessage(cb func(PongMessage)) {
 	c.handlers.onPongMessage = cb
 }
+
+// OnPrivateMessage sets the callback for when a PRIVMSG message is received.
 func (c *Client) OnPrivateMessage(cb func(PrivateMessage)) {
 	c.handlers.onPrivateMessage = cb
 }
+
+// OnWhisperMessage sets the callback for when a WHISPER message is received.
 func (c *Client) OnWhisperMessage(cb func(WhisperMessage)) {
 	c.handlers.onWhisperMessage = cb
 }

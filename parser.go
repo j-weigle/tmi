@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// EscapeIRCTagValues escapes strings in certain messages such as USERNOTICE system-msgs. \s -> ' ', \n -> '', \r -> '', \: -> ';', \\ -> '\'
 func (tags IRCTags) EscapeIRCTagValues() {
 	var ircTagEscapes = []struct {
 		from string
@@ -29,6 +30,7 @@ func (tags IRCTags) EscapeIRCTagValues() {
 	}
 }
 
+// ParseTimeStamp takes a time string from Twitch (sent-ts and tmi-sent-ts) and converts it into a time.Unix time.
 func ParseTimeStamp(unixTime string) time.Time {
 	var i, err = strconv.ParseInt(unixTime, 10, 64)
 	if err != nil {
@@ -37,6 +39,7 @@ func ParseTimeStamp(unixTime string) time.Time {
 	return time.Unix(0, i*int64(time.Millisecond))
 }
 
+// ParseReplyParentMessage takes a PrivateMessage's tags if it is marked as a reply, and returns the parent message that it was replying to.
 func ParseReplyParentMessage(tags IRCTags) ReplyMsgParent {
 	return ReplyMsgParent{
 		DisplayName: tags["reply-parent-display-name"],
@@ -286,10 +289,10 @@ func parseNoticeMessage(data IRCData) (NoticeMessage, error) {
 		noticeMessage.Text = msg
 	}
 
-	if msgId, ok := data.Tags["msg-id"]; ok {
-		noticeMessage.MsgID = msgId
+	if msgID, ok := data.Tags["msg-id"]; ok {
+		noticeMessage.MsgID = msgID
 
-		switch msgId {
+		switch msgID {
 		// Automod
 		case "msg_rejected",
 			"msg_rejected_mandatory":
@@ -761,7 +764,6 @@ parseLoop:
 func parseEmoteSets(tags IRCTags) []string {
 	if sets, ok := tags["emote-sets"]; ok {
 		return strings.Split(sets, ",")
-	} else {
-		return []string{}
 	}
+	return []string{}
 }

@@ -7,11 +7,11 @@ import (
 )
 
 func TestNewClientConfig(t *testing.T) {
-	connection := connectionConfig{true, true, -1, time.Second * 30}
-	id := identityConfig{}
-	pinger := pingConfig{true, time.Minute, time.Second * 5}
+	connection := ConnectionConfig{true, true, -1, time.Second * 30}
+	id := IdentityConfig{}
+	pinger := PingConfig{true, time.Minute, time.Second * 5}
 
-	want := &clientConfig{connection, id, pinger}
+	want := &ClientConfig{connection, id, pinger}
 	got := NewClientConfig()
 
 	if want.Connection != got.Connection {

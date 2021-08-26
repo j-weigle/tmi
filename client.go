@@ -17,7 +17,7 @@ const pingSignature = "go-tmi-ws"
 type Client struct {
 	channels         map[string]bool
 	channelsMutex    sync.Mutex
-	config           clientConfig
+	config           ClientConfig
 	conn             *websocket.Conn
 	connected        atomicBool
 	done             func(error) // callback function for fatal errors.
@@ -53,7 +53,7 @@ type onMessageHandlers struct {
 }
 
 // NewClient returns a new client using the provided config.
-func NewClient(c clientConfig) *Client {
+func NewClient(c ClientConfig) *Client {
 	return &Client{
 		channels: make(map[string]bool),
 		config:   c,

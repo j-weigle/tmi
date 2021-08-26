@@ -129,18 +129,18 @@ func TestTmiHandlers(t *testing.T) {
 		{"PONG", nil},
 		{"PRIVMSG", nil},
 		{"WHISPER", nil},
-		{"002", ErrUnsetIRCCommand},
-		{"003", ErrUnsetIRCCommand},
-		{"004", ErrUnsetIRCCommand},
-		{"375", ErrUnsetIRCCommand},
-		{"372", ErrUnsetIRCCommand},
-		{"376", ErrUnsetIRCCommand},
-		{"CAP", ErrUnsetIRCCommand},
-		{"SERVERCHANGE", ErrUnsetIRCCommand},
-		{"421", ErrUnsetIRCCommand},
-		{"MODE", ErrUnsetIRCCommand},
-		{"366", ErrUnsetIRCCommand},
-		{"RANDOMCOMMAND", ErrUnrecognizedIRCCommand},
+		{"002", errUnsetIRCCommand},
+		{"003", errUnsetIRCCommand},
+		{"004", errUnsetIRCCommand},
+		{"375", errUnsetIRCCommand},
+		{"372", errUnsetIRCCommand},
+		{"376", errUnsetIRCCommand},
+		{"CAP", errUnsetIRCCommand},
+		{"SERVERCHANGE", errUnsetIRCCommand},
+		{"421", errUnsetIRCCommand},
+		{"MODE", errUnsetIRCCommand},
+		{"366", errUnsetIRCCommand},
+		{"RANDOMCOMMAND", errUnrecognizedIRCCommand},
 	}
 
 	c := NewClient(NewClientConfig())
@@ -185,23 +185,23 @@ func TestAllHandlersCallOnMessageWhenSet(t *testing.T) {
 		{"PONG", nil},
 		{"PRIVMSG", nil},
 		{"WHISPER", nil},
-		{"002", ErrUnsetIRCCommand},
-		{"003", ErrUnsetIRCCommand},
-		{"004", ErrUnsetIRCCommand},
-		{"375", ErrUnsetIRCCommand},
-		{"372", ErrUnsetIRCCommand},
-		{"376", ErrUnsetIRCCommand},
-		{"CAP", ErrUnsetIRCCommand},
-		{"SERVERCHANGE", ErrUnsetIRCCommand},
-		{"421", ErrUnsetIRCCommand},
-		{"MODE", ErrUnsetIRCCommand},
-		{"366", ErrUnsetIRCCommand},
-		{"RANDOMCOMMAND", ErrUnrecognizedIRCCommand},
+		{"002", errUnsetIRCCommand},
+		{"003", errUnsetIRCCommand},
+		{"004", errUnsetIRCCommand},
+		{"375", errUnsetIRCCommand},
+		{"372", errUnsetIRCCommand},
+		{"376", errUnsetIRCCommand},
+		{"CAP", errUnsetIRCCommand},
+		{"SERVERCHANGE", errUnsetIRCCommand},
+		{"421", errUnsetIRCCommand},
+		{"MODE", errUnsetIRCCommand},
+		{"366", errUnsetIRCCommand},
+		{"RANDOMCOMMAND", errUnrecognizedIRCCommand},
 	}
 
 	var wantUnsetCounter int
 	for _, test := range tests {
-		if test.want == ErrUnsetIRCCommand || test.want == ErrUnrecognizedIRCCommand {
+		if test.want == errUnsetIRCCommand || test.want == errUnrecognizedIRCCommand {
 			wantUnsetCounter++
 		}
 	}

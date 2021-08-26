@@ -122,7 +122,7 @@ type GlobalUserstateMessage struct {
 	User      *User    `json:"user"`       // information about the user that logged in
 }
 
-// HostTargetMessage data
+// HostTargetMessage data when a joined channel begins hosting another channel or exits host mode.
 type HostTargetMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -134,7 +134,7 @@ type HostTargetMessage struct {
 	Viewers int    `json:"viewers"` // the number of viewers at channel during the host event
 }
 
-// NoticeMessage data
+// NoticeMessage data when a chat setting is changed, mods are received, login failures, etc.
 type NoticeMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -149,14 +149,14 @@ type NoticeMessage struct {
 	VIPs    []string `json:"vips"`    // list of vips for Channel when Notice is set to vips
 }
 
-// ReconnectMessage data
+// ReconnectMessage data when the server requests that clients reconnect.
 type ReconnectMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
 	Type    MessageType `json:"type"`
 }
 
-// RoomstateMessage data
+// RoomstateMessage data when a chat setting is changed, and includes the delay for certain settings.
 type RoomstateMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -173,7 +173,7 @@ type RoomState struct { // note followers-only: -1 (disabled), 0 (enabled immedi
 	Delay   time.Duration `json:"delay"`   // seconds between messages (slow), minutes post-follow (followers-only)
 }
 
-// UsernoticeMessage data
+// UsernoticeMessage data when a user subscribes to a channel, incoming raid, and channel rituals.
 type UsernoticeMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -187,7 +187,7 @@ type UsernoticeMessage struct {
 	User      *User   `json:"user"`       // user who caused the notice
 }
 
-// UserstateMessage data
+// UserstateMessage data when a user joins a channel or sends a PrivateMessage.
 type UserstateMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -198,7 +198,7 @@ type UserstateMessage struct {
 	User      *User    `json:"user"`       // user that joined or sent a privmsg
 }
 
-// NamesMessage data
+// NamesMessage data when joining a channel, provides list of users in the chat.
 type NamesMessage struct { // WARNING: deprecated, but not removed yet
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -208,7 +208,7 @@ type NamesMessage struct { // WARNING: deprecated, but not removed yet
 	Users []string `json:"users"` // list of usernames
 }
 
-// JoinMessage data
+// JoinMessage data when user joins a channel, gives the channel joined and username joined as.
 type JoinMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -218,7 +218,7 @@ type JoinMessage struct {
 	Username string `json:"username"` // name of joined account
 }
 
-// PartMessage data
+// PartMessage data when user leaves a channel, gives the channel left and username that left.
 type PartMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -228,7 +228,7 @@ type PartMessage struct {
 	Username string `json:"username"` // name of parted account
 }
 
-// PingMessage data
+// PingMessage data when a ping is received from the server.
 type PingMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
@@ -236,7 +236,7 @@ type PingMessage struct {
 	Type    MessageType `json:"type"`
 }
 
-// PongMessage data
+// PongMessage data when a pong is received from the server.
 type PongMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`
@@ -244,7 +244,7 @@ type PongMessage struct {
 	Type    MessageType `json:"type"`
 }
 
-// PrivateMessage data
+// PrivateMessage data when a message is sent in a chat that is joined.
 type PrivateMessage struct {
 	Channel string      `json:"channel"`
 	Data    IRCData     `json:"data"`
@@ -269,7 +269,7 @@ type ReplyMsgParent struct {
 	Username    string `json:"username"` // login
 }
 
-// WhisperMessage data
+// WhisperMessage data when a whisper message is received.
 type WhisperMessage struct {
 	Data    IRCData     `json:"data"`
 	IRCType string      `json:"irc-type"`

@@ -5,74 +5,6 @@ import (
 	"time"
 )
 
-func (d1 *IRCData) equals(d2 *IRCData) bool {
-	if d1.Raw != d2.Raw ||
-		d1.Prefix != d2.Prefix ||
-		d1.Command != d2.Command {
-		return false
-	}
-	for k, v1 := range d1.Tags {
-		if v2, ok := d2.Tags[k]; ok {
-			if v1 != v2 {
-				return false
-			}
-		} else {
-			return false
-		}
-	}
-	if len(d1.Params) != len(d2.Params) {
-		return false
-	}
-	for i, v := range d1.Params {
-		if v != d2.Params[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func (u1 *User) equals(u2 *User) bool {
-	if u1.BadgeInfo != u2.BadgeInfo {
-		return false
-	}
-	for i, badge := range u1.Badges {
-		if badge != u2.Badges[i] {
-			return false
-		}
-	}
-	if u1.Broadcaster != u2.Broadcaster {
-		return false
-	}
-	if u1.Color != u2.Color {
-		return false
-	}
-	if u1.DisplayName != u2.DisplayName {
-		return false
-	}
-	if u1.Mod != u2.Mod {
-		return false
-	}
-	if u1.Name != u2.Name {
-		return false
-	}
-	if u1.Subscriber != u2.Subscriber {
-		return false
-	}
-	if u1.Turbo != u2.Turbo {
-		return false
-	}
-	if u1.ID != u2.ID {
-		return false
-	}
-	if u1.UserType != u2.UserType {
-		return false
-	}
-	if u1.VIP != u2.VIP {
-		return false
-	}
-	return true
-}
-
 func TestParseIRCMessage(t *testing.T) {
 	t.Parallel()
 	type parseIRCTest struct {
@@ -291,24 +223,12 @@ func TestParseClearChatMessage(t *testing.T) {
 		ircData, _ := parseIRCMessage(test.in)
 		got := parseClearChatMessage(ircData)
 
-		if got.Channel != test.want.Channel {
-			t.Errorf("Channel: got %v, want %v", got.Channel, test.want.Channel)
-		}
-		if got.IRCType != test.want.IRCType {
-			t.Errorf("IRCType: got %v, want %v", got.IRCType, test.want.IRCType)
-		}
-		if got.Text != test.want.Text {
-			t.Errorf("Text: got %v, want %v", got.Text, test.want.Text)
-		}
-		if got.Type != test.want.Type {
-			t.Errorf("Type: got %v, want %v", got.Type, test.want.Type)
-		}
-		if got.BanDuration != test.want.BanDuration {
-			t.Errorf("BanDuration: got %v, want %v", got.BanDuration, test.want.BanDuration)
-		}
-		if got.Target != test.want.Target {
-			t.Errorf("Target: got %v, want %v", got.Target, test.want.Target)
-		}
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertDurationsEqual(t, "BanDuration", got.BanDuration, test.want.BanDuration)
+		assertStringsEqual(t, "Target", got.Target, test.want.Target)
 	}
 }
 
@@ -347,24 +267,12 @@ func TestParseClearMsgMessage(t *testing.T) {
 		ircData, _ := parseIRCMessage(test.in)
 		got := parseClearMsgMessage(ircData)
 
-		if got.Channel != test.want.Channel {
-			t.Errorf("Channel: got %v, want %v", got.Channel, test.want.Channel)
-		}
-		if got.IRCType != test.want.IRCType {
-			t.Errorf("IRCType: got %v, want %v", got.IRCType, test.want.IRCType)
-		}
-		if got.Text != test.want.Text {
-			t.Errorf("Text: got %v, want %v", got.Text, test.want.Text)
-		}
-		if got.Type != test.want.Type {
-			t.Errorf("Type: got %v, want %v", got.Type, test.want.Type)
-		}
-		if got.Login != test.want.Login {
-			t.Errorf("Login: got %v, want %v", got.Login, test.want.Login)
-		}
-		if got.TargetMsgID != test.want.TargetMsgID {
-			t.Errorf("TargetMsgID: got %v, want %v", got.TargetMsgID, test.want.TargetMsgID)
-		}
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringsEqual(t, "Login", got.Login, test.want.Login)
+		assertStringsEqual(t, "TargetMsgID", got.TargetMsgID, test.want.TargetMsgID)
 	}
 }
 
@@ -428,17 +336,9 @@ func TestParseGlobalUserstateMessage(t *testing.T) {
 		ircData, _ := parseIRCMessage(test.in)
 		got := parseGlobalUserstateMessage(ircData)
 
-		if got.IRCType != test.want.IRCType {
-			t.Errorf("IRCType: got %v, want %v", got.IRCType, test.want.IRCType)
-		}
-		if got.Type != test.want.Type {
-			t.Errorf("Type: got %v, want %v", got.Type, test.want.Type)
-		}
-		for i, emote := range got.EmoteSets {
-			if emote != test.want.EmoteSets[i] {
-				t.Errorf("EmoteSets: got %v, want %v", emote, test.want.EmoteSets[i])
-			}
-		}
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringSlicesEqual(t, "EmoteSets", got.EmoteSets, test.want.EmoteSets)
 		if !got.User.equals(test.want.User) {
 			t.Errorf("User: got %v, want %v", got.User, test.want.User)
 		}
@@ -502,23 +402,162 @@ func TestParseHostTargetMessage(t *testing.T) {
 		ircData, _ := parseIRCMessage(test.in)
 		got := parseHostTargetMessage(ircData)
 
-		if got.Channel != test.want.Channel {
-			t.Errorf("Channel: got %v, want %v", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringsEqual(t, "Hosted", got.Hosted, test.want.Hosted)
+		assertIntsEqual(t, "Viewers", got.Viewers, test.want.Viewers)
+	}
+}
+
+func TestParseNoticeMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want NoticeMessage
+	}{
+		{
+			"@msg-id=slow_off :tmi.twitch.tv NOTICE #dallas :This room is no longer in slow mode.",
+			NoticeMessage{
+				Channel: "#dallas",
+				IRCType: "NOTICE",
+				Text:    "This room is no longer in slow mode.",
+				Type:    NOTICE,
+				Enabled: false,
+				Mods:    []string{},
+				MsgID:   "slow_off",
+				Notice:  "notice",
+				VIPs:    []string{},
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got, err := parseNoticeMessage(ircData)
+		if err != nil {
+			t.Error(err)
 		}
-		if got.IRCType != test.want.IRCType {
-			t.Errorf("IRCType: got %v, want %v", got.IRCType, test.want.IRCType)
-		}
-		if got.Text != test.want.Text {
-			t.Errorf("Text: got %v, want %v", got.Text, test.want.Text)
-		}
-		if got.Type != test.want.Type {
-			t.Errorf("Type: got %v, want %v", got.Type, test.want.Type)
-		}
-		if got.Hosted != test.want.Hosted {
-			t.Errorf("Hosted: got %v, want %v", got.Hosted, test.want.Hosted)
-		}
-		if got.Viewers != test.want.Viewers {
-			t.Errorf("Viewers: got %v, want %v", got.Viewers, test.want.Viewers)
+
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertBoolsEqual(t, "Enabled", got.Enabled, test.want.Enabled)
+		assertStringSlicesEqual(t, "Mods", got.Mods, test.want.Mods)
+		assertStringsEqual(t, "MsgID", got.MsgID, test.want.MsgID)
+		assertStringsEqual(t, "Notice", got.Notice, test.want.Notice)
+		assertStringSlicesEqual(t, "VIPs", got.VIPs, test.want.VIPs)
+	}
+}
+
+func assertStringsEqual(t *testing.T, name, s1, s2 string) {
+	if s1 != s2 {
+		t.Errorf("%v: got %v, want %v", name, s1, s2)
+	}
+}
+
+func assertStringSlicesEqual(t *testing.T, name string, s1, s2 []string) {
+	if len(s1) != len(s2) {
+		t.Errorf("%v: len(got) %v, len(want) %v", name, len(s1), len(s2))
+	}
+	for i := range s1 {
+		if s1[i] != s2[i] {
+			t.Errorf("%v[%v]: got %v, want %v", name, i, s1[i], s2[i])
 		}
 	}
+}
+
+func assertMessageTypesEqual(t *testing.T, t1, t2 MessageType) {
+	if t1 != t2 {
+		t.Errorf("Type: got %v, want %v", t1, t2)
+	}
+}
+
+func assertDurationsEqual(t *testing.T, name string, d1, d2 time.Duration) {
+	if d1 != d2 {
+		t.Errorf("%v: got %v, want %v", name, d1, d2)
+	}
+}
+
+func assertIntsEqual(t *testing.T, name string, i1, i2 int) {
+	if i1 != i2 {
+		t.Errorf("%v: got %v, want %v", name, i1, i2)
+	}
+}
+
+func assertBoolsEqual(t *testing.T, name string, b1, b2 bool) {
+	if b1 != b2 {
+		t.Errorf("%v: got %v, want %v", name, b1, b2)
+	}
+}
+
+func (d1 *IRCData) equals(d2 *IRCData) bool {
+	if d1.Raw != d2.Raw ||
+		d1.Prefix != d2.Prefix ||
+		d1.Command != d2.Command {
+		return false
+	}
+	for k, v1 := range d1.Tags {
+		if v2, ok := d2.Tags[k]; ok {
+			if v1 != v2 {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	if len(d1.Params) != len(d2.Params) {
+		return false
+	}
+	for i, v := range d1.Params {
+		if v != d2.Params[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (u1 *User) equals(u2 *User) bool {
+	if u1.BadgeInfo != u2.BadgeInfo {
+		return false
+	}
+	for i, badge := range u1.Badges {
+		if badge != u2.Badges[i] {
+			return false
+		}
+	}
+	if u1.Broadcaster != u2.Broadcaster {
+		return false
+	}
+	if u1.Color != u2.Color {
+		return false
+	}
+	if u1.DisplayName != u2.DisplayName {
+		return false
+	}
+	if u1.Mod != u2.Mod {
+		return false
+	}
+	if u1.Name != u2.Name {
+		return false
+	}
+	if u1.Subscriber != u2.Subscriber {
+		return false
+	}
+	if u1.Turbo != u2.Turbo {
+		return false
+	}
+	if u1.ID != u2.ID {
+		return false
+	}
+	if u1.UserType != u2.UserType {
+		return false
+	}
+	if u1.VIP != u2.VIP {
+		return false
+	}
+	return true
 }

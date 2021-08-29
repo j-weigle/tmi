@@ -129,7 +129,7 @@ func (c *Client) disconnect() bool {
 		websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")) == nil
 }
 
-// locks join queue and begins sending joins on a interval
+// locks join queue and begins sending joins on an interval
 func (c *Client) joinChannels(channels []string) {
 	if channels == nil || len(channels) < 1 {
 		return

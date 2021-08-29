@@ -123,10 +123,10 @@ func (c *Client) connect(u url.URL) error {
 }
 
 // disconnect sends a close message to the server and then closes the connection.
-func (c *Client) disconnect() {
-	c.conn.WriteMessage(websocket.CloseMessage,
-		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	c.conn.Close()
+func (c *Client) disconnect() bool {
+	defer c.conn.Close()
+	return c.conn.WriteMessage(websocket.CloseMessage,
+		websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")) == nil
 }
 
 // locks join queue and begins sending joins on a interval

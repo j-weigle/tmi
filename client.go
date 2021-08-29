@@ -101,7 +101,7 @@ func (c *Client) connect(u url.URL) error {
 	// Sends in this goroutine before starting writer to prevent write conflicts.
 	err = c.sendConnectSequence()
 	if err != nil {
-		closeErrCb(err)
+		closeErrCb(errReconnect)
 	}
 
 	// Begin writing to c.conn in separate goroutine.
@@ -226,7 +226,7 @@ func (c *Client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 			case <-time.After(c.config.Pinger.interval):
 				err := c.send("PING :" + pingSignature)
 				if err != nil {
-					closeErrCb(err)
+					closeErrCb(errReconnect)
 				}
 
 				select {

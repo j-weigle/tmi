@@ -144,7 +144,7 @@ func TestEscapeIRCTagValues(t *testing.T) {
 	testTags["t3"] = `An\sanonymous\suser\sgifted\sa\sTier\s1\ssub\sto\sTenureCalculator!\s`
 	testTags["t4"] = `15\sraiders\sfrom\sTestChannel\shave\sjoined\n!`
 	testTags["t5"] = `Seventoes\sis\snew\shere!`
-	testTags["t6"] = `\\I\shave\n\sall\r\sthe\ssymbols\:\s`
+	testTags["t6"] = `\\I\shave\sall\r\n\sthe\ssymbols\:\s`
 
 	tests := []struct {
 		key  string
@@ -153,15 +153,17 @@ func TestEscapeIRCTagValues(t *testing.T) {
 		{"t1", "ronni has subscribed for 6 months!"},
 		{"t2", "TWW2 gifted a Tier 1 sub to Mr_Woodchuck!"},
 		{"t3", "An anonymous user gifted a Tier 1 sub to TenureCalculator!"},
-		{"t4", "15 raiders from TestChannel have joined!"},
+		{"t4", "15 raiders from TestChannel have joined\n!"},
 		{"t5", "Seventoes is new here!"},
-		{"t6", `\I have all the symbols;`},
+		{"t6", "\\I have all\r\n the symbols;"},
 	}
 
 	testTags.EscapeIRCTagValues()
 	for _, v := range tests {
 		if testTags[v.key] != v.want {
 			t.Errorf("got: %v, want: %v\n", testTags[v.key], v.want)
+		} else {
+			println(testTags[v.key])
 		}
 	}
 }

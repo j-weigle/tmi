@@ -9,23 +9,39 @@ import (
 
 // EscapeIRCTagValues escapes strings in certain messages such as USERNOTICE system-msgs. \s -> ' ', \n -> '', \r -> '', \: -> ';', \\ -> '\'
 func (tags IRCTags) EscapeIRCTagValues() {
-	var ircTagEscapes = []struct {
-		from string
-		to   string
-	}{
-		{`\s`, ` `},
-		{`\n`, ``},
-		{`\r`, ``},
-		{`\:`, `;`},
-		{`\\`, `\`},
-	}
+	// See Escaping values at https://ircv3.net/specs/extensions/message-tags.html
+	var ircTagEscapes = strings.NewReplacer(
+		`\:`, `;`,
+		`\s`, ` `,
+		`\r`, "\r",
+		`\n`, "\n",
+	)
 
 	for k, v := range tags {
-		for _, escape := range ircTagEscapes {
-			v = strings.ReplaceAll(v, escape.from, escape.to)
+		v = ircTagEscapes.Replace(v)
+
+		// remove invalid escapes (escapes left that aren't \\)
+		var bV = []byte(v)
+		var i int
+		for i < len(bV) {
+			if bV[i] == '\\' {
+				if i+1 < len(bV) {
+					if bV[i+1] == '\\' {
+						// skip over \ at i+1, valid escape
+						i++
+					} else {
+						// delete the \ at i, leave the character following it, invalid escape
+						bV = append(bV[0:i], bV[i+1:]...)
+					}
+				}
+			}
+			i++
 		}
-		v = strings.TrimSuffix(v, "\\")
+		v = string(bV)
+
+		v = strings.ReplaceAll(v, `\\`, `\`)
 		v = strings.TrimSpace(v)
+		v = strings.TrimSuffix(v, `\`)
 		tags[k] = v
 	}
 }

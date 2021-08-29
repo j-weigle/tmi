@@ -182,6 +182,8 @@ type UsernoticeMessage struct {
 	Type    MessageType `json:"type"`
 
 	Emotes    []Emote `json:"emotes"`     // parsed emotes string
+	ID        string  `json:"id"`         // message id
+	MsgID     string  `json:"msg-id"`     // not a unique message id, but the type of notice
 	MsgParams IRCTags `json:"msg-params"` // any msg-param tags for the notice
 	SystemMsg string  `json:"system-msg"` // message printed in chat on the notice
 	User      *User   `json:"user"`       // user who caused the notice

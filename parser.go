@@ -469,6 +469,8 @@ func parseUsernoticeMessage(data IRCData) UsernoticeMessage {
 		Data:      data,
 		IRCType:   data.Command,
 		Type:      USERNOTICE,
+		ID:        data.Tags["id"],
+		MsgID:     data.Tags["msg-id"],
 		MsgParams: make(IRCTags),
 		SystemMsg: data.Tags["system-msg"],
 		User:      parseUser(data.Tags, data.Prefix),

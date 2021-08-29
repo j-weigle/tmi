@@ -703,6 +703,9 @@ func parseBadges(rawBadges string) []Badge {
 
 	for _, b := range splBadges {
 		var pair = strings.SplitN(b, "/", 2)
+		if len(pair) != 2 {
+			continue
+		}
 		var badge Badge
 		badge.Name = pair[0]
 		if val, err := strconv.Atoi(pair[1]); err == nil {
@@ -727,6 +730,9 @@ func parseEmotes(rawEmotes, message string) []Emote {
 parseLoop:
 	for _, emote := range splEmotes {
 		var spl = strings.SplitN(emote, ":", 2)
+		if len(spl) != 2 {
+			continue
+		}
 
 		var posPairs = strings.Split(spl[1], ",")
 		if len(posPairs) < 1 {

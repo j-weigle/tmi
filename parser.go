@@ -72,8 +72,8 @@ func ParseTimeStamp(unixTime string) time.Time {
 }
 
 // ParseReplyParentMessage takes a PrivateMessage's tags if it is marked as a reply, and returns the parent message that it was replying to.
-func ParseReplyParentMessage(tags IRCTags) ReplyMsgParent {
-	return ReplyMsgParent{
+func ParseReplyParentMessage(tags IRCTags) ReplyParentMsg {
+	return ReplyParentMsg{
 		DisplayName: tags["reply-parent-display-name"],
 		ID:          tags["reply-parent-msg-id"],
 		Text:        tags["reply-parent-msg-body"],

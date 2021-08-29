@@ -262,8 +262,8 @@ type PrivateMessage struct {
 	User   *User   `json:"user"`   // user that sent the message
 }
 
-// ReplyMsgParent is the information provided in tags when a PrivateMessage is a reply.
-type ReplyMsgParent struct {
+// ReplyParentMsg is the information provided in tags when a PrivateMessage is a reply.
+type ReplyParentMsg struct {
 	DisplayName string `json:"display-name"`
 	ID          string `json:"id"`   // message id
 	Text        string `json:"text"` // message body

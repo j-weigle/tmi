@@ -99,7 +99,10 @@ func (c *Client) connect(u url.URL) error {
 
 	// Send NICK, PASS, and CAP REQ.
 	// Sends in this goroutine before starting writer to prevent write conflicts.
-	c.sendConnectSequence()
+	err = c.sendConnectSequence()
+	if err != nil {
+		closeErrCb(err)
+	}
 
 	// Begin writing to c.conn in separate goroutine.
 	c.spawnWriter(ctx, wg, closeErrCb)
@@ -221,7 +224,10 @@ func (c *Client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 				continue
 
 			case <-time.After(c.config.Pinger.interval):
-				c.send("PING :" + pingSignature)
+				err := c.send("PING :" + pingSignature)
+				if err != nil {
+					closeErrCb(err)
+				}
 
 				select {
 				case <-c.rcvdPong:

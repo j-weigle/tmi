@@ -132,13 +132,16 @@ func (c *Client) Part(channels ...string) error {
 	for _, channel := range channels {
 		channel = formatChannel(channel)
 
-		if c.connected.get() {
-			c.send("PART " + channel)
-		}
-
 		c.channelsMutex.Lock()
 		delete(c.channels, channel)
 		c.channelsMutex.Unlock()
+
+		if c.connected.get() {
+			var err = c.send("PART " + channel)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -148,13 +151,15 @@ func (c *Client) Part(channels ...string) error {
 func (c *Client) Say(channel string, message string) error {
 	channel = formatChannel(channel)
 
-	if len(message) >= 500 {
-		var messages = splitChatMessage(message)
-		for _, m := range messages {
-			c.send("PRIVMSG " + channel + " :" + m)
+	if len(message) < 500 {
+		return c.send("PRIVMSG " + channel + " :" + message)
+	}
+	var messages = splitChatMessage(message)
+	for _, m := range messages {
+		var err = c.send("PRIVMSG " + channel + " :" + m)
+		if err != nil {
+			return err
 		}
-	} else {
-		c.send("PRIVMSG " + channel + " :" + message)
 	}
 	return nil
 }

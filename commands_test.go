@@ -52,7 +52,10 @@ func TestJoinThreeChannels(t *testing.T) {
 		results[m.Channel] = true
 	})
 
-	c.Join(tests...)
+	err := c.Join(tests...)
+	if err != nil {
+		t.Error(err)
+	}
 
 	go func() {
 		// join waits 600 milliseconds between joins, give it extra time
@@ -64,7 +67,10 @@ func TestJoinThreeChannels(t *testing.T) {
 		}
 		c.Disconnect()
 	}()
-	c.Connect()
+	err = c.Connect()
+	if err == nil {
+		t.Errorf("Connect should always return an error when done")
+	}
 }
 
 func TestPartChannels(t *testing.T) {
@@ -89,7 +95,10 @@ func TestPartChannels(t *testing.T) {
 		results[m.Channel] = false
 	})
 
-	c.Join(tests...)
+	err := c.Join(tests...)
+	if err != nil {
+		t.Error(err)
+	}
 
 	go func() {
 		// join waits 600 milliseconds between joins, give it extra time
@@ -100,7 +109,10 @@ func TestPartChannels(t *testing.T) {
 			}
 		}
 		for _, test := range tests {
-			c.Part(test)
+			err := c.Part(test)
+			if err != nil {
+				t.Error(err)
+			}
 			time.Sleep(time.Second)
 			if joined, ok := results[test]; ok {
 				if joined {
@@ -110,7 +122,10 @@ func TestPartChannels(t *testing.T) {
 		}
 		c.Disconnect()
 	}()
-	c.Connect()
+	err = c.Connect()
+	if err == nil {
+		t.Errorf("Connect should always return an error when done")
+	}
 }
 
 func TestFormatChannel(t *testing.T) {
@@ -150,7 +165,10 @@ func TestSay(t *testing.T) {
 
 	c := NewClient(NewClientConfig())
 	for _, test := range tests {
-		c.Say(test.in.channel, test.in.message)
+		err := c.Say(test.in.channel, test.in.message)
+		if err != nil {
+			t.Error(err)
+		}
 		got := <-c.outbound
 		if got != test.want {
 			t.Errorf("got %v, want %v", got, test.want)
@@ -165,7 +183,10 @@ func TestSayLong(t *testing.T) {
 		"PRIVMSG #long :" + strings.TrimSpace(test[1000:])}
 
 	c := NewClient(NewClientConfig())
-	c.Say("#long", test)
+	err := c.Say("#long", test)
+	if err != nil {
+		t.Error(err)
+	}
 
 	for _, want := range wants {
 		got := <-c.outbound

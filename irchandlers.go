@@ -119,7 +119,10 @@ func (c *Client) tmiHandlers(data IRCData) error {
 	case "PING":
 		var pingMessage = parsePingMessage(data)
 		if pingMessage.Text != "" {
-			c.send("PONG :" + pingMessage.Text)
+			var err = c.send("PONG :" + pingMessage.Text)
+			if err != nil {
+				return errReconnect
+			}
 		}
 		if c.handlers.onPingMessage != nil {
 			c.handlers.onPingMessage(pingMessage)

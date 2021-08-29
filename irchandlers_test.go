@@ -36,7 +36,12 @@ func TestPingPong(t *testing.T) {
 		rcvdPong <- struct{}{}
 	})
 
-	go c.Connect()
+	go func() {
+		err := c.Connect()
+		if err == nil {
+			t.Errorf("Connect should always return an error when done")
+		}
+	}()
 	time.Sleep(time.Second)
 	err := c.send("PING :" + pingSignature)
 	if err != nil {
@@ -228,7 +233,10 @@ func TestAllHandlersCallOnMessageWhenSet(t *testing.T) {
 	c.OnWhisperMessage(func(m WhisperMessage) { results[m.Type] = true })
 
 	for _, test := range tests {
-		c.handleIRCMessage(test.in)
+		err := c.handleIRCMessage(test.in)
+		if err != nil {
+			t.Error(err)
+		}
 	}
 
 	for _, mt := range types {

@@ -1,6 +1,7 @@
 package tmi
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -162,8 +163,6 @@ func TestEscapeIRCTagValues(t *testing.T) {
 	for _, v := range tests {
 		if testTags[v.key] != v.want {
 			t.Errorf("got: %v, want: %v\n", testTags[v.key], v.want)
-		} else {
-			println(testTags[v.key])
 		}
 	}
 }
@@ -649,6 +648,250 @@ func TestParseRoomstateMessage(t *testing.T) {
 	}
 }
 
+func TestParseUsernoticeMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want UsernoticeMessage
+	}{
+		{
+			`@badge-info=<badge-info>;badges=<badges>;color=<color>;display-name=<display-name>;emotes=<emotes>;id=<id-of-msg>;login=<user>;mod=<mod>;msg-id=<msg-id>;room-id=<room-id>;subscriber=<subscriber>;system-msg=<system-msg>;tmi-sent-ts=<timestamp>;turbo=<turbo>;user-id=<user-id>;user-type=<user-type> :tmi.twitch.tv USERNOTICE #<channel> :<message>`,
+			UsernoticeMessage{
+				Channel:   "#<channel>",
+				IRCType:   "USERNOTICE",
+				Text:      "<message>",
+				Type:      USERNOTICE,
+				Emotes:    []Emote{},
+				ID:        "<id-of-msg>",
+				MsgID:     "<msg-id>",
+				MsgParams: IRCTags{},
+				SystemMsg: `<system-msg>`,
+				User: &User{
+					BadgeInfo:   "<badge-info>",
+					Badges:      []Badge{},
+					Broadcaster: false,
+					Color:       "<color>",
+					DisplayName: "<display-name>",
+					Mod:         false,
+					Name:        "<display-name>",
+					Subscriber:  false,
+					Turbo:       false,
+					ID:          "<user-id>",
+					UserType:    "<user-type>",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			`@badge-info=;badges=staff/1,broadcaster/1,turbo/1;color=#008000;display-name=ronni;emotes=;id=db25007f-7a18-43eb-9379-80131e44d633;login=ronni;mod=0;msg-id=resub;msg-param-cumulative-months=6;msg-param-streak-months=2;msg-param-should-share-streak=1;msg-param-sub-plan=Prime;msg-param-sub-plan-name=Prime;room-id=1337;subscriber=1;system-msg=ronni\shas\ssubscribed\sfor\s6\smonths!;tmi-sent-ts=1507246572675;turbo=1;user-id=1337;user-type=staff :tmi.twitch.tv USERNOTICE #dallas :Great stream -- keep it up!`,
+			UsernoticeMessage{
+				Channel: "#dallas",
+				IRCType: "USERNOTICE",
+				Text:    "Great stream -- keep it up!",
+				Type:    USERNOTICE,
+				Emotes:  []Emote{},
+				ID:      "db25007f-7a18-43eb-9379-80131e44d633",
+				MsgID:   "resub",
+				MsgParams: IRCTags{
+					"msg-param-cumulative-months":   `6`,
+					"msg-param-streak-months":       `2`,
+					"msg-param-should-share-streak": `1`,
+					"msg-param-sub-plan":            `Prime`,
+					"msg-param-sub-plan-name":       `Prime`,
+				},
+				SystemMsg: `ronni\shas\ssubscribed\sfor\s6\smonths!`,
+				User: &User{
+					BadgeInfo: "",
+					Badges: []Badge{
+						{"staff", 1},
+						{"broadcaster", 1},
+						{"turbo", 1},
+					},
+					Broadcaster: true,
+					Color:       "#008000",
+					DisplayName: "ronni",
+					Mod:         false,
+					Name:        "ronni",
+					Subscriber:  true,
+					Turbo:       true,
+					ID:          "1337",
+					UserType:    "staff",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			`@badge-info=;badges=staff/1,premium/1;color=#0000FF;display-name=TWW2;emotes=;id=e9176cd8-5e22-4684-ad40-ce53c2561c5e;login=tww2;mod=0;msg-id=subgift;msg-param-months=1;msg-param-recipient-display-name=Mr_Woodchuck;msg-param-recipient-id=89614178;msg-param-recipient-name=mr_woodchuck;msg-param-sub-plan-name=House\sof\sNyoro~n;msg-param-sub-plan=1000;room-id=19571752;subscriber=0;system-msg=TWW2\sgifted\sa\sTier\s1\ssub\sto\sMr_Woodchuck!;tmi-sent-ts=1521159445153;turbo=0;user-id=13405587;user-type=staff :tmi.twitch.tv USERNOTICE #forstycup`,
+			UsernoticeMessage{
+				Channel: "#forstycup",
+				IRCType: "USERNOTICE",
+				Text:    "",
+				Type:    USERNOTICE,
+				Emotes:  []Emote{},
+				ID:      "e9176cd8-5e22-4684-ad40-ce53c2561c5e",
+				MsgID:   "subgift",
+				MsgParams: IRCTags{
+					"msg-param-months":                 `1`,
+					"msg-param-recipient-display-name": `Mr_Woodchuck`,
+					"msg-param-recipient-id":           `89614178`,
+					"msg-param-recipient-name":         `mr_woodchuck`,
+					"msg-param-sub-plan-name":          `House\sof\sNyoro~n`,
+					"msg-param-sub-plan":               `1000`,
+				},
+				SystemMsg: `TWW2\sgifted\sa\sTier\s1\ssub\sto\sMr_Woodchuck!`,
+				User: &User{
+					BadgeInfo: "",
+					Badges: []Badge{
+						{"staff", 1},
+						{"premium", 1},
+					},
+					Broadcaster: false,
+					Color:       "#0000FF",
+					DisplayName: "TWW2",
+					Mod:         false,
+					Name:        "tww2",
+					Subscriber:  false,
+					Turbo:       false,
+					ID:          "13405587",
+					UserType:    "staff",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			`@badge-info=;badges=broadcaster/1,subscriber/6;color=;display-name=qa_subs_partner;emotes=;flags=;id=b1818e3c-0005-490f-ad0a-804957ddd760;login=qa_subs_partner;mod=0;msg-id=anonsubgift;msg-param-months=3;msg-param-recipient-display-name=TenureCalculator;msg-param-recipient-id=135054130;msg-param-recipient-user-name=tenurecalculator;msg-param-sub-plan-name=t111;msg-param-sub-plan=1000;room-id=196450059;subscriber=1;system-msg=An\sanonymous\suser\sgifted\sa\sTier\s1\ssub\sto\sTenureCalculator!\s;tmi-sent-ts=1542063432068;turbo=0;user-id=196450059;user-type= :tmi.twitch.tv USERNOTICE #qa_subs_partner`,
+			UsernoticeMessage{
+				Channel: "#qa_subs_partner",
+				IRCType: "USERNOTICE",
+				Text:    "",
+				Type:    USERNOTICE,
+				Emotes:  []Emote{},
+				ID:      "b1818e3c-0005-490f-ad0a-804957ddd760",
+				MsgID:   "anonsubgift",
+				MsgParams: IRCTags{
+					"msg-param-months":                 `3`,
+					"msg-param-recipient-display-name": `TenureCalculator`,
+					"msg-param-recipient-id":           `135054130`,
+					"msg-param-recipient-user-name":    `tenurecalculator`,
+					"msg-param-sub-plan-name":          `t111`,
+					"msg-param-sub-plan":               `1000`,
+				},
+				SystemMsg: `An\sanonymous\suser\sgifted\sa\sTier\s1\ssub\sto\sTenureCalculator!\s`,
+				User: &User{
+					BadgeInfo: "",
+					Badges: []Badge{
+						{"broadcaster", 1},
+						{"subscriber", 6},
+					},
+					Broadcaster: true,
+					Color:       "",
+					DisplayName: "qa_subs_partner",
+					Mod:         false,
+					Name:        "qa_subs_partner",
+					Subscriber:  true,
+					Turbo:       false,
+					ID:          "196450059",
+					UserType:    "",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			`@badge-info=;badges=turbo/1;color=#9ACD32;display-name=TestChannel;emotes=;id=3d830f12-795c-447d-af3c-ea05e40fbddb;login=testchannel;mod=0;msg-id=raid;msg-param-displayName=TestChannel;msg-param-login=testchannel;msg-param-viewerCount=15;room-id=56379257;subscriber=0;system-msg=15\sraiders\sfrom\sTestChannel\shave\sjoined\n!;tmi-sent-ts=1507246572675;tmi-sent-ts=1507246572675;turbo=1;user-id=123456;user-type= :tmi.twitch.tv USERNOTICE #othertestchannel`,
+			UsernoticeMessage{
+				Channel: "#othertestchannel",
+				IRCType: "USERNOTICE",
+				Text:    "",
+				Type:    USERNOTICE,
+				Emotes:  []Emote{},
+				ID:      "3d830f12-795c-447d-af3c-ea05e40fbddb",
+				MsgID:   "raid",
+				MsgParams: IRCTags{
+					"msg-param-displayName": `TestChannel`,
+					"msg-param-login":       `testchannel`,
+					"msg-param-viewerCount": `15`,
+				},
+				SystemMsg: `15\sraiders\sfrom\sTestChannel\shave\sjoined\n!`,
+				User: &User{
+					BadgeInfo: "",
+					Badges: []Badge{
+						{"turbo", 1},
+					},
+					Broadcaster: false,
+					Color:       "#9ACD32",
+					DisplayName: "TestChannel",
+					Mod:         false,
+					Name:        "testchannel",
+					Subscriber:  false,
+					Turbo:       true,
+					ID:          "123456",
+					UserType:    "",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			`@badge-info=;badges=;color=;display-name=SevenTest1;emotes=30259:0-6;id=37feed0f-b9c7-4c3a-b475-21c6c6d21c3d;login=seventest1;mod=0;msg-id=ritual;msg-param-ritual-name=new_chatter;room-id=6316121;subscriber=0;system-msg=Seventoes\sis\snew\shere!;tmi-sent-ts=1508363903826;turbo=0;user-id=131260580;user-type= :tmi.twitch.tv USERNOTICE #seventoes :HeyGuys`,
+			UsernoticeMessage{
+				Channel: "#seventoes",
+				IRCType: "USERNOTICE",
+				Text:    "HeyGuys",
+				Type:    USERNOTICE,
+				Emotes:  []Emote{{"30259", "HeyGuys", []EmotePosition{{0, 6}}}},
+				ID:      "37feed0f-b9c7-4c3a-b475-21c6c6d21c3d",
+				MsgID:   "ritual",
+				MsgParams: IRCTags{
+					"msg-param-ritual-name": `new_chatter`,
+				},
+				SystemMsg: `Seventoes\sis\snew\shere!`,
+				User: &User{
+					BadgeInfo:   "",
+					Badges:      []Badge{},
+					Broadcaster: false,
+					Color:       "",
+					DisplayName: "SevenTest1",
+					Mod:         false,
+					Name:        "seventest1",
+					Subscriber:  false,
+					Turbo:       false,
+					ID:          "131260580",
+					UserType:    "",
+					VIP:         false,
+				},
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseUsernoticeMessage(ircData)
+
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		if len(got.Emotes) != len(test.want.Emotes) {
+			t.Errorf("Emotes: len(got) %v, len(want) %v", len(got.Emotes), len(test.want.Emotes))
+		}
+		for i := range got.Emotes {
+			assertStringsEqual(t, "Emotes ID", got.Emotes[i].ID, test.want.Emotes[i].ID)
+			assertStringsEqual(t, "Emotes Name", got.Emotes[i].Name, test.want.Emotes[i].Name)
+			for j, p := range got.Emotes[i].Positions {
+				assertIntsEqual(t, fmt.Sprintf("Emotes Positions[%v].StartIdx", j), p.StartIdx, test.want.Emotes[i].Positions[j].StartIdx)
+				assertIntsEqual(t, fmt.Sprintf("Emotes Positions[%v].EndIdx", j), p.EndIdx, test.want.Emotes[i].Positions[j].EndIdx)
+			}
+		}
+		if !got.MsgParams.equals(test.want.MsgParams) {
+			t.Errorf("MsgParams: got %v, want %v", got.MsgParams, test.want.MsgParams)
+		}
+		assertStringsEqual(t, "SystemMsg", got.SystemMsg, test.want.SystemMsg)
+		if !got.User.equals(test.want.User) {
+			t.Errorf("User: got %v, want %v", got.User, test.want.User)
+		}
+	}
+}
+
 func assertStringsEqual(t *testing.T, name, s1, s2 string) {
 	if s1 != s2 {
 		t.Errorf("%v: got %v, want %v", name, s1, s2)
@@ -713,6 +956,22 @@ func (d1 *IRCData) equals(d2 *IRCData) bool {
 	}
 	for i, v := range d1.Params {
 		if v != d2.Params[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (t1 IRCTags) equals(t2 IRCTags) bool {
+	if len(t1) != len(t2) {
+		return false
+	}
+	for k, v1 := range t1 {
+		if v2, ok := t2[k]; ok {
+			if v1 != v2 {
+				return false
+			}
+		} else {
 			return false
 		}
 	}

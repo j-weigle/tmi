@@ -300,8 +300,8 @@ type Emote struct {
 
 // EmotePosition of emotes when emotes are in chat messages or whispers.
 type EmotePosition struct {
-	EndIdx   int `json:"end-index"`
 	StartIdx int `json:"start-index"`
+	EndIdx   int `json:"end-index"`
 }
 
 // User info provided in tags.

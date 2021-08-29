@@ -7,8 +7,28 @@ import (
 	"time"
 )
 
-// EscapeIRCTagValues escapes strings in certain messages such as USERNOTICE system-msgs. \s -> ' ', \n -> '', \r -> '', \: -> ';', \\ -> '\'
+// EscapeIRCTagValues escapes strings in certain messages' IRCTags `\s` -> " ", `\n` -> "\n", `\r` -> "\r", `\:` -> ";", `\\` -> "\\"
 func (tags IRCTags) EscapeIRCTagValues() {
+	for k, v := range tags {
+		v = escapeIRCTag(v)
+		tags[k] = v
+	}
+}
+
+// EscapeIRCTagValues escapes strings in certain messages `\s` -> " ", `\n` -> "\n", `\r` -> "\r", `\:` -> ";", `\\` -> "\\"
+func EscapeIRCTagValues(tags ...string) []string {
+	if tags == nil || len(tags) < 1 {
+		return []string{}
+	}
+	var escaped []string
+	for _, t := range tags {
+		t = escapeIRCTag(t)
+		escaped = append(escaped, t)
+	}
+	return escaped
+}
+
+func escapeIRCTag(tag string) string {
 	// See Escaping values at https://ircv3.net/specs/extensions/message-tags.html
 	var ircTagEscapes = strings.NewReplacer(
 		`\:`, `;`,
@@ -16,34 +36,30 @@ func (tags IRCTags) EscapeIRCTagValues() {
 		`\r`, "\r",
 		`\n`, "\n",
 	)
+	tag = ircTagEscapes.Replace(tag)
 
-	for k, v := range tags {
-		v = ircTagEscapes.Replace(v)
-
-		// remove invalid escapes (escapes left that aren't \\)
-		var bV = []byte(v)
-		var i int
-		for i < len(bV) {
-			if bV[i] == '\\' {
-				if i+1 < len(bV) {
-					if bV[i+1] == '\\' {
-						// skip over \ at i+1, valid escape
-						i++
-					} else {
-						// delete the \ at i, leave the character following it, invalid escape
-						bV = append(bV[0:i], bV[i+1:]...)
-					}
+	// remove invalid escapes (escapes left that aren't \\)
+	var bV = []byte(tag)
+	var i int
+	for i < len(bV) {
+		if bV[i] == '\\' {
+			if i+1 < len(bV) {
+				if bV[i+1] == '\\' {
+					// skip over \ at i+1, valid escape
+					i++
+				} else {
+					// delete the \ at i, leave the character following it, invalid escape
+					bV = append(bV[0:i], bV[i+1:]...)
 				}
 			}
-			i++
 		}
-		v = string(bV)
-
-		v = strings.ReplaceAll(v, `\\`, `\`)
-		v = strings.TrimSpace(v)
-		v = strings.TrimSuffix(v, `\`)
-		tags[k] = v
+		i++
 	}
+	tag = string(bV)
+
+	tag = strings.ReplaceAll(tag, `\\`, `\`)
+	tag = strings.TrimSpace(tag)
+	return strings.TrimSuffix(tag, `\`)
 }
 
 // ParseTimeStamp takes a time string from Twitch (sent-ts and tmi-sent-ts) and converts it into a time.Unix time.

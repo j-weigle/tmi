@@ -330,6 +330,7 @@ func TestParseGlobalUserstateMessage(t *testing.T) {
 			},
 		},
 	}
+
 	for i := range tests {
 		var test = tests[i]
 
@@ -551,6 +552,101 @@ func TestParseNoticeMessage(t *testing.T) {
 	}
 }
 
+func TestParseRoomstateMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want RoomstateMessage
+	}{
+		{
+			"@emote-only=<emote-only>;followers-only=<followers-only>;r9k=<r9k>;rituals=<ritual>;slow=<slow>;subs-only=<subs-only> :tmi.twitch.tv ROOMSTATE #<channel>",
+			RoomstateMessage{
+				Channel: "#<channel>",
+				IRCType: "ROOMSTATE",
+				Type:    ROOMSTATE,
+				States: map[string]RoomState{
+					"emote-only":     {},
+					"followers-only": {},
+					"r9k":            {},
+					"rituals":        {},
+					"slow":           {},
+					"subs-only":      {},
+				},
+			},
+		},
+		{
+			"@emote-only=0;followers-only=0;r9k=0;slow=0;subs-only=0 :tmi.twitch.tv ROOMSTATE #dallas",
+			RoomstateMessage{
+				Channel: "#dallas",
+				IRCType: "ROOMSTATE",
+				Type:    ROOMSTATE,
+				States: map[string]RoomState{
+					"emote-only":     {false, 0},
+					"followers-only": {true, 0},
+					"r9k":            {false, 0},
+					"slow":           {false, 0},
+					"subs-only":      {false, 0},
+				},
+			},
+		},
+		{
+			"@slow=10 :tmi.twitch.tv ROOMSTATE #dallas",
+			RoomstateMessage{
+				Channel: "#dallas",
+				IRCType: "ROOMSTATE",
+				Type:    ROOMSTATE,
+				States: map[string]RoomState{
+					"slow": {true, time.Second * 10},
+				},
+			},
+		},
+		{
+			"@followers-only=-1 :tmi.twitch.tv ROOMSTATE #whoever",
+			RoomstateMessage{
+				Channel: "#whoever",
+				IRCType: "ROOMSTATE",
+				Type:    ROOMSTATE,
+				States: map[string]RoomState{
+					"followers-only": {false, 0},
+				},
+			},
+		},
+		{
+			"@followers-only=1 :tmi.twitch.tv ROOMSTATE #anyone",
+			RoomstateMessage{
+				Channel: "#anyone",
+				IRCType: "ROOMSTATE",
+				Type:    ROOMSTATE,
+				States: map[string]RoomState{
+					"followers-only": {true, time.Minute},
+				},
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseRoomstateMessage(ircData)
+
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		if len(got.States) != len(test.want.States) {
+			t.Errorf("States: len(got) %v, len(want) %v", len(got.States), len(test.want.States))
+		}
+		for k, wv := range test.want.States {
+			if gv, ok := got.States[k]; ok {
+				if gv != wv {
+					t.Errorf("States: got %v, want %v", gv, wv)
+				}
+			} else {
+				t.Errorf("got.States[%v] not created", k)
+			}
+		}
+	}
+}
+
 func assertStringsEqual(t *testing.T, name, s1, s2 string) {
 	if s1 != s2 {
 		t.Errorf("%v: got %v, want %v", name, s1, s2)
@@ -598,6 +694,9 @@ func (d1 *IRCData) equals(d2 *IRCData) bool {
 		d1.Command != d2.Command {
 		return false
 	}
+	if len(d1.Tags) != len(d2.Tags) {
+		return false
+	}
 	for k, v1 := range d1.Tags {
 		if v2, ok := d2.Tags[k]; ok {
 			if v1 != v2 {
@@ -620,6 +719,9 @@ func (d1 *IRCData) equals(d2 *IRCData) bool {
 
 func (u1 *User) equals(u2 *User) bool {
 	if u1.BadgeInfo != u2.BadgeInfo {
+		return false
+	}
+	if len(u1.Badges) != len(u2.Badges) {
 		return false
 	}
 	for i, badge := range u1.Badges {

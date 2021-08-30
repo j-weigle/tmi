@@ -892,6 +892,102 @@ func TestParseUsernoticeMessage(t *testing.T) {
 	}
 }
 
+func TestParseUserstateMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want UserstateMessage
+	}{
+		{
+			"@badge-info=<badge-info>;badges=<badges>;color=<color>;display-name=<display-name>;emote-sets=<emote-sets>;mod=<mod>;subscriber=<subscriber>;turbo=<turbo>;user-type=<user-type> :tmi.twitch.tv USERSTATE #<channel>",
+			UserstateMessage{
+				Channel:   "#<channel>",
+				IRCType:   "USERSTATE",
+				Type:      USERSTATE,
+				EmoteSets: []string{"<emote-sets>"},
+				User: &User{
+					BadgeInfo:   "<badge-info>",
+					Badges:      []Badge{},
+					Broadcaster: false,
+					Color:       "<color>",
+					DisplayName: "<display-name>",
+					Mod:         false,
+					Name:        "<display-name>",
+					Subscriber:  false,
+					Turbo:       false,
+					ID:          "",
+					UserType:    "<user-type>",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			"@badge-info=;badges=staff/1;color=#0D4200;display-name=ronni;emote-sets=0,33,50,237,793,2126,3517,4578,5569,9400,10337,12239;mod=1;subscriber=1;turbo=1;user-type=staff :tmi.twitch.tv USERSTATE #dallas",
+			UserstateMessage{
+				Channel:   "#dallas",
+				IRCType:   "USERSTATE",
+				Type:      USERSTATE,
+				EmoteSets: []string{"0", "33", "50", "237", "793", "2126", "3517", "4578", "5569", "9400", "10337", "12239"},
+				User: &User{
+					BadgeInfo: "",
+					Badges: []Badge{
+						{"staff", 1},
+					},
+					Broadcaster: false,
+					Color:       "#0D4200",
+					DisplayName: "ronni",
+					Mod:         true,
+					Name:        "ronni",
+					Subscriber:  true,
+					Turbo:       true,
+					ID:          "",
+					UserType:    "staff",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			"@badge-info=;badges=moderator/1;color=#00FF7F;display-name=testerester;emote-sets=0,564265402,592920959,610186276;mod=1;subscriber=0;user-type=mod :tmi.twitch.tv USERSTATE #testing",
+			UserstateMessage{
+				Channel:   "#testing",
+				IRCType:   "USERSTATE",
+				Type:      USERSTATE,
+				EmoteSets: []string{"0", "564265402", "592920959", "610186276"},
+				User: &User{
+					BadgeInfo: "",
+					Badges: []Badge{
+						{"moderator", 1},
+					},
+					Broadcaster: false,
+					Color:       "#00FF7F",
+					DisplayName: "testerester",
+					Mod:         true,
+					Name:        "testerester",
+					Subscriber:  false,
+					Turbo:       false,
+					ID:          "",
+					UserType:    "mod",
+					VIP:         false,
+				},
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseUserstateMessage(ircData)
+
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringSlicesEqual(t, "EmoteSets", got.EmoteSets, test.want.EmoteSets)
+		if !got.User.equals(test.want.User) {
+			t.Errorf("User: got %v, want %v", got.User, test.want.User)
+		}
+	}
+}
+
 func assertStringsEqual(t *testing.T, name, s1, s2 string) {
 	if s1 != s2 {
 		t.Errorf("%v: got %v, want %v", name, s1, s2)

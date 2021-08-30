@@ -988,6 +988,44 @@ func TestParseUserstateMessage(t *testing.T) {
 	}
 }
 
+func TestParseNamesMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want NamesMessage
+	}{
+		{
+			":<client>.tmi.twitch.tv 353 client = #<channel> :<client>",
+			NamesMessage{
+				Channel: "#<channel>",
+				IRCType: "353",
+				Type:    NAMES,
+				Users:   []string{"<client>"},
+			},
+		},
+		{
+			":you.tmi.twitch.tv 353 client = #testchannel :you them1 them2 them3",
+			NamesMessage{
+				Channel: "#testchannel",
+				IRCType: "353",
+				Type:    NAMES,
+				Users:   []string{"you", "them1", "them2", "them3"},
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseNamesMessage(ircData)
+
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringSlicesEqual(t, "Users", got.Users, test.want.Users)
+	}
+}
+
 func assertStringsEqual(t *testing.T, name, s1, s2 string) {
 	if s1 != s2 {
 		t.Errorf("%v: got %v, want %v", name, s1, s2)

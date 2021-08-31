@@ -1026,6 +1026,134 @@ func TestParseNamesMessage(t *testing.T) {
 	}
 }
 
+func TestParseJoinMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want JoinMessage
+	}{
+		{
+			":<username>!<username>@<username>.tmi.twitch.tv JOIN #<channel>",
+			JoinMessage{
+				Channel:  "#<channel>",
+				IRCType:  "JOIN",
+				Type:     JOIN,
+				Username: "<username>",
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseJoinMessage(ircData)
+
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringsEqual(t, "Username", got.Username, test.want.Username)
+	}
+}
+
+func TestParsePartMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want PartMessage
+	}{
+		{
+			":<username>!<username>@<username>.tmi.twitch.tv PART #<channel>",
+			PartMessage{
+				Channel:  "#<channel>",
+				IRCType:  "PART",
+				Type:     PART,
+				Username: "<username>",
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parsePartMessage(ircData)
+
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringsEqual(t, "Username", got.Username, test.want.Username)
+	}
+}
+
+func TestParsePingMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want PingMessage
+	}{
+		{
+			"PING",
+			PingMessage{
+				IRCType: "PING",
+				Type:    PING,
+				Text:    "",
+			},
+		},
+		{
+			"PING :tmi.twitch.tv",
+			PingMessage{
+				IRCType: "PING",
+				Type:    PING,
+				Text:    "tmi.twitch.tv",
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parsePingMessage(ircData)
+
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+	}
+}
+
+func TestParsePongMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want PongMessage
+	}{
+		{
+			"PONG",
+			PongMessage{
+				IRCType: "PONG",
+				Type:    PONG,
+				Text:    "",
+			},
+		},
+		{
+			":tmi.twitch.tv PONG tmi.twitch.tv :" + pingSignature,
+			PongMessage{
+				IRCType: "PONG",
+				Type:    PONG,
+				Text:    pingSignature,
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parsePongMessage(ircData)
+
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+	}
+}
+
 func assertStringsEqual(t *testing.T, name, s1, s2 string) {
 	if s1 != s2 {
 		t.Errorf("%v: got %v, want %v", name, s1, s2)

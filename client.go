@@ -216,24 +216,33 @@ func (c *Client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 		defer wg.Done()
 
 		for {
+			var intervalT = time.NewTimer(c.config.Pinger.interval)
 			select {
 			case <-ctx.Done():
+				if !intervalT.Stop() {
+					<-intervalT.C
+				}
 				return
 
 			case <-c.rcvdMsg:
-				continue
+				if !intervalT.Stop() {
+					<-intervalT.C
+				}
 
-			case <-time.After(c.config.Pinger.interval):
+			case <-intervalT.C:
 				err := c.send("PING :" + pingSignature)
 				if err != nil {
 					closeErrCb(errReconnect)
 				}
 
+				var timeoutT = time.NewTimer(c.config.Pinger.timeout)
 				select {
 				case <-c.rcvdPong:
-					continue
+					if !timeoutT.Stop() {
+						<-timeoutT.C
+					}
 
-				case <-time.After(c.config.Pinger.timeout):
+				case <-timeoutT.C:
 					closeErrCb(errReconnect)
 					return
 				}

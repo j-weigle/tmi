@@ -1154,6 +1154,116 @@ func TestParsePongMessage(t *testing.T) {
 	}
 }
 
+func TestParsePrivateMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want PrivateMessage
+	}{
+		{
+			"@badge-info=;badges=premium/1;client-nonce=b837cca5074aaa5eb4482e5df50b3e6a;color=;display-name=Banjana;emotes=;flags=;id=23c201b3-94e9-4d28-8f71-baac329af81c;mod=0;room-id=132230344;subscriber=0;tmi-sent-ts=1630888435197;turbo=0;user-id=138657205;user-type= :banjana!banjana@banjana.tmi.twitch.tv PRIVMSG #moistcr1tikal :Xrd is insane",
+			PrivateMessage{
+				Channel: "#moistcr1tikal",
+				IRCType: "PRIVMSG",
+				Type:    PRIVMSG,
+				Text:    "Xrd is insane",
+				Action:  false,
+				Bits:    0,
+				Emotes:  []Emote{},
+				ID:      "23c201b3-94e9-4d28-8f71-baac329af81c",
+				Reply:   false,
+				User: &User{
+					BadgeInfo: "",
+					Badges: []Badge{
+						{"premium", 1},
+					},
+					Broadcaster: false,
+					Color:       "",
+					DisplayName: "Banjana",
+					Mod:         false,
+					Name:        "Banjana",
+					Subscriber:  false,
+					Turbo:       false,
+					ID:          "138657205",
+					UserType:    "",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			"@badge-info=subscriber/4;badges=subscriber/3,glitchcon2020/1;client-nonce=0c57e7357cbea005b349f24ed0bdbf15;color=#0000FF;display-name=Ridz_;emote-only=1;emotes=303446392:0-3;flags=;id=9d8fca2e-2924-4b50-9655-2e0921d73eb9;mod=0;room-id=207813352;subscriber=1;tmi-sent-ts=1630888038100;turbo=0;user-id=138035491;user-type= :ridz_!ridz_@ridz_.tmi.twitch.tv PRIVMSG #hasanabi :hasO",
+			PrivateMessage{
+				Channel: "#hasanabi",
+				IRCType: "PRIVMSG",
+				Type:    PRIVMSG,
+				Text:    "hasO",
+				Action:  false,
+				Bits:    0,
+				Emotes: []Emote{
+					{"303446392", "hasO", []EmotePosition{{0, 3}}},
+				},
+				ID:    "9d8fca2e-2924-4b50-9655-2e0921d73eb9",
+				Reply: false,
+				User: &User{
+					BadgeInfo: "subscriber/4",
+					Badges: []Badge{
+						{"subscriber", 3},
+						{"glitchcon2020", 1},
+					},
+					Broadcaster: false,
+					Color:       "#0000FF",
+					DisplayName: "Ridz_",
+					Mod:         false,
+					Name:        "ridz_",
+					Subscriber:  true,
+					Turbo:       false,
+					ID:          "138035491",
+					UserType:    "",
+					VIP:         false,
+				},
+			},
+		},
+		{
+			"@badge-info=;badges=;color=;display-name=Durrpadil;emotes=;first-msg=0;flags=;id=6b4dbb8a-b240-42d0-b890-d1f4be18cf10;mod=0;room-id=62463189;subscriber=0;tmi-sent-ts=1630887934441;turbo=0;user-id=39378800;user-type= :durrpadil!durrpadil@durrpadil.tmi.twitch.tv PRIVMSG #sophiabot :\u0001ACTION banned\u0001",
+			PrivateMessage{
+				Channel: "#sophiabot",
+				IRCType: "PRIVMSG",
+				Type:    PRIVMSG,
+				Text:    "banned",
+				Action:  true,
+				Bits:    0,
+				Emotes:  []Emote{},
+				ID:      "6b4dbb8a-b240-42d0-b890-d1f4be18cf10",
+				Reply:   false,
+				User: &User{
+					BadgeInfo:   "",
+					Badges:      []Badge{},
+					Broadcaster: false,
+					Color:       "",
+					DisplayName: "Durrpadil",
+					Mod:         false,
+					Name:        "durrpadil",
+					Subscriber:  false,
+					Turbo:       false,
+					ID:          "39378800",
+					UserType:    "",
+					VIP:         false,
+				},
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parsePrivateMessage(ircData)
+
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+	}
+}
+
 func assertStringsEqual(t *testing.T, name, s1, s2 string) {
 	if s1 != s2 {
 		t.Errorf("%v: got %v, want %v", name, s1, s2)

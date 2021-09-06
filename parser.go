@@ -606,8 +606,7 @@ func parsePrivateMessage(data IRCData) PrivateMessage {
 		privateMessage.Text = data.Params[1]
 	}
 
-	if strings.HasPrefix(privateMessage.Text, "\u0001ACTION") &&
-		strings.HasSuffix(privateMessage.Text, "\u0001") {
+	if strings.HasPrefix(privateMessage.Text, "\u0001ACTION") && strings.HasSuffix(privateMessage.Text, "\u0001") {
 		privateMessage.Text = privateMessage.Text[len("\u0001ACTION ") : len(privateMessage.Text)-1]
 		privateMessage.Action = true
 	}

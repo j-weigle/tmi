@@ -164,6 +164,11 @@ func (c *Client) Say(channel string, message string) error {
 	return nil
 }
 
+// SetJoinRateLimit sets the RateLimiter for JOIN commands to settings in RateLimit.
+func (c *Client) SetJoinRateLimit(rl RateLimit) {
+	c.rLimiterJoins = NewRateLimiter(rl)
+}
+
 // UpdatePassword updates the password the client uses for authentication.
 func (c *Client) UpdatePassword(password string) {
 	c.config.Identity.SetPassword(password)

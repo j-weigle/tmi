@@ -23,12 +23,12 @@ type Client struct {
 	done             func(error) // callback function for fatal errors.
 	handlers         onMessageHandlers
 	inbound          chan string   // for sending inbound messages to the handlers, acts as a buffer.
-	joinQMutex       sync.Mutex    // join queue mutex, prevent exceeding join rate limit
 	notifDisconnect  notifier      // used for disconnect call notifications
 	outbound         chan string   // for sending outbound messages to the writer.
 	rcvdMsg          chan struct{} // when conn reads, notifies ping loop.
 	rcvdPong         chan struct{} // when pong received, notifies ping loop.
 	reconnectCounter int           // for keeping track of reconnect attempts before a successful attempt.
+	rLimiterJoins    *RateLimiter
 }
 
 type onMessageHandlers struct {
@@ -129,26 +129,23 @@ func (c *Client) disconnect() bool {
 		websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")) == nil
 }
 
-// locks join queue and begins sending joins on an interval
+// sends joins using rate limiter if one is set
 func (c *Client) joinChannels(channels []string) {
 	if channels == nil || len(channels) < 1 {
 		return
 	}
 
-	c.joinQMutex.Lock() // prevent exceeding join limit
-	defer c.joinQMutex.Unlock()
-	// join limit is 20 attempts per 10 seconds per user,
-	// 0.6s interval allows a 0.1s grace period to be safe
-	const interval = time.Millisecond * 600
-
 	for _, ch := range channels {
-		if c.connected.get() {
-			if c.send("JOIN "+ch) == nil {
-				c.channelsMutex.Lock()
-				c.channels[ch] = c.connected.get()
-				c.channelsMutex.Unlock()
-				time.Sleep(interval)
-			}
+		if c.rLimiterJoins != nil {
+			c.rLimiterJoins.Wait()
+		}
+		if !c.connected.get() {
+			return
+		}
+		if c.send("JOIN "+ch) == nil {
+			c.channelsMutex.Lock()
+			c.channels[ch] = c.connected.get()
+			c.channelsMutex.Unlock()
 		}
 	}
 }

@@ -1258,9 +1258,65 @@ func TestParsePrivateMessage(t *testing.T) {
 		ircData, _ := parseIRCMessage(test.in)
 		got := parsePrivateMessage(ircData)
 
+		assertStringsEqual(t, "Channel", got.Channel, test.want.Channel)
 		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
 		assertMessageTypesEqual(t, got.Type, test.want.Type)
 		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+		assertBoolsEqual(t, "Action", got.Action, test.want.Action)
+		assertIntsEqual(t, "Bits", got.Bits, test.want.Bits)
+		assertEmoteSlicesEqual(t, got.Emotes, test.want.Emotes)
+		assertStringsEqual(t, "ID", got.ID, test.want.ID)
+		assertBoolsEqual(t, "Reply", got.Reply, test.want.Reply)
+		if !got.User.equals(test.want.User) {
+			t.Errorf("User: got %v, want %v", got.User, test.want.User)
+		}
+	}
+}
+
+func TestParseWhisperMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want WhisperMessage
+	}{
+		{
+			"@badges=;color=#FFFFFF;display-name=Bobby;emotes=25:45-49;message-id=1;thread-id=119302705_555556384;turbo=0;user-id=123456789;user-type= :bobby!bobby@bobby.tmi.twitch.tv WHISPER billy :hey look I'm an action whisper with an emote Kappa",
+			WhisperMessage{
+				IRCType: "WHISPER",
+				Type:    WHISPER,
+				Text:    "hey look I'm an action whisper with an emote Kappa",
+				Emotes: []Emote{
+					{"25", "Kappa", []EmotePosition{{45, 49}}},
+				},
+				ID:     "1",
+				Target: "billy",
+				User: &User{
+					Badges:      []Badge{},
+					Color:       "#FFFFFF",
+					DisplayName: "Bobby",
+					Name:        "bobby",
+					Turbo:       false,
+					ID:          "123456789",
+					VIP:         false,
+				},
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseWhisperMessage(ircData)
+
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+		assertEmoteSlicesEqual(t, got.Emotes, test.want.Emotes)
+		assertStringsEqual(t, "ID", got.ID, test.want.ID)
+		assertStringsEqual(t, "Target", got.Target, test.want.Target)
+		if !got.User.equals(test.want.User) {
+			t.Errorf("User: got %v, want %v", got.User, test.want.User)
+		}
 	}
 }
 
@@ -1304,6 +1360,22 @@ func assertBoolsEqual(t *testing.T, name string, b1, b2 bool) {
 		t.Errorf("%v: got %v, want %v", name, b1, b2)
 	}
 }
+
+func assertEmoteSlicesEqual(t *testing.T, got, want []Emote) {
+	if len(got) != len(want) {
+		t.Errorf("Emotes: len(got) %v, len(want) %v", len(got), len(want))
+	}
+	for i := range got {
+		assertStringsEqual(t, "Emotes ID", got[i].ID, want[i].ID)
+		assertStringsEqual(t, "Emotes Name", got[i].Name, want[i].Name)
+		for j, p := range got[i].Positions {
+			assertIntsEqual(t, fmt.Sprintf("Emotes Positions[%v].StartIdx", j), p.StartIdx, want[i].Positions[j].StartIdx)
+			assertIntsEqual(t, fmt.Sprintf("Emotes Positions[%v].EndIdx", j), p.EndIdx, want[i].Positions[j].EndIdx)
+		}
+	}
+}
+
+// TODO: update all equals messages to have context specific error triggers
 
 func (d1 *IRCData) equals(d2 *IRCData) bool {
 	if d1.Raw != d2.Raw ||

@@ -642,11 +642,6 @@ func parseWhisperMessage(data IRCData) WhisperMessage {
 		whisperMessage.Text = data.Params[1]
 	}
 
-	if strings.HasPrefix(whisperMessage.Text, "/me") {
-		whisperMessage.Text = whisperMessage.Text[len("/me "):]
-		whisperMessage.Action = true
-	}
-
 	whisperMessage.Emotes = parseEmotes(data.Tags["emotes"], whisperMessage.Text)
 
 	return whisperMessage

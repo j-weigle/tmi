@@ -10,9 +10,9 @@ func TestParseIRCMessage(t *testing.T) {
 	t.Parallel()
 	type parseIRCTest struct {
 		in  string
-		out *IRCData
+		out IRCData
 	}
-	var testIRCData = []*IRCData{
+	var testIRCData = []IRCData{
 		{
 			Raw: `@tname1=tag1;tname2=tag2;tname3=tag3 :prefix COMMAND #channel :message`,
 			Tags: map[string]string{
@@ -131,9 +131,7 @@ func TestParseIRCMessage(t *testing.T) {
 				t.Error(err)
 			}
 			want := pIRCT.out
-			if !got.equals(want) {
-				t.Errorf("\ngot:\n%v\nwant:\n%v\n", got, want)
-			}
+			assertIRCDataEqual(t, &got, &want)
 		})
 	}
 }
@@ -341,9 +339,7 @@ func TestParseGlobalUserstateMessage(t *testing.T) {
 		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
 		assertMessageTypesEqual(t, got.Type, test.want.Type)
 		assertStringSlicesEqual(t, "EmoteSets", got.EmoteSets, test.want.EmoteSets)
-		if !got.User.equals(test.want.User) {
-			t.Errorf("User: got %v, want %v", got.User, test.want.User)
-		}
+		assertUsersEqual(t, got.User, test.want.User)
 	}
 }
 
@@ -639,10 +635,10 @@ func TestParseRoomstateMessage(t *testing.T) {
 		for k, wv := range test.want.States {
 			if gv, ok := got.States[k]; ok {
 				if gv != wv {
-					t.Errorf("States: got %v, want %v", gv, wv)
+					t.Errorf("States[%v]: got %v, want %v", k, gv, wv)
 				}
 			} else {
-				t.Errorf("got.States[%v] not created", k)
+				t.Errorf("States[%v] not created in got, want %v", k, wv)
 			}
 		}
 	}
@@ -871,24 +867,10 @@ func TestParseUsernoticeMessage(t *testing.T) {
 		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
 		assertStringsEqual(t, "Text", got.Text, test.want.Text)
 		assertMessageTypesEqual(t, got.Type, test.want.Type)
-		if len(got.Emotes) != len(test.want.Emotes) {
-			t.Errorf("Emotes: len(got) %v, len(want) %v", len(got.Emotes), len(test.want.Emotes))
-		}
-		for i := range got.Emotes {
-			assertStringsEqual(t, "Emotes ID", got.Emotes[i].ID, test.want.Emotes[i].ID)
-			assertStringsEqual(t, "Emotes Name", got.Emotes[i].Name, test.want.Emotes[i].Name)
-			for j, p := range got.Emotes[i].Positions {
-				assertIntsEqual(t, fmt.Sprintf("Emotes Positions[%v].StartIdx", j), p.StartIdx, test.want.Emotes[i].Positions[j].StartIdx)
-				assertIntsEqual(t, fmt.Sprintf("Emotes Positions[%v].EndIdx", j), p.EndIdx, test.want.Emotes[i].Positions[j].EndIdx)
-			}
-		}
-		if !got.MsgParams.equals(test.want.MsgParams) {
-			t.Errorf("MsgParams: got %v, want %v", got.MsgParams, test.want.MsgParams)
-		}
+		assertEmoteSlicesEqual(t, got.Emotes, test.want.Emotes)
+		assertStringMapsEqual(t, "MsgParams", got.MsgParams, test.want.MsgParams)
 		assertStringsEqual(t, "SystemMsg", got.SystemMsg, test.want.SystemMsg)
-		if !got.User.equals(test.want.User) {
-			t.Errorf("User: got %v, want %v", got.User, test.want.User)
-		}
+		assertUsersEqual(t, got.User, test.want.User)
 	}
 }
 
@@ -982,9 +964,7 @@ func TestParseUserstateMessage(t *testing.T) {
 		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
 		assertMessageTypesEqual(t, got.Type, test.want.Type)
 		assertStringSlicesEqual(t, "EmoteSets", got.EmoteSets, test.want.EmoteSets)
-		if !got.User.equals(test.want.User) {
-			t.Errorf("User: got %v, want %v", got.User, test.want.User)
-		}
+		assertUsersEqual(t, got.User, test.want.User)
 	}
 }
 
@@ -1180,7 +1160,7 @@ func TestParsePrivateMessage(t *testing.T) {
 					Color:       "",
 					DisplayName: "Banjana",
 					Mod:         false,
-					Name:        "Banjana",
+					Name:        "banjana",
 					Subscriber:  false,
 					Turbo:       false,
 					ID:          "138657205",
@@ -1267,9 +1247,7 @@ func TestParsePrivateMessage(t *testing.T) {
 		assertEmoteSlicesEqual(t, got.Emotes, test.want.Emotes)
 		assertStringsEqual(t, "ID", got.ID, test.want.ID)
 		assertBoolsEqual(t, "Reply", got.Reply, test.want.Reply)
-		if !got.User.equals(test.want.User) {
-			t.Errorf("User: got %v, want %v", got.User, test.want.User)
-		}
+		assertUsersEqual(t, got.User, test.want.User)
 	}
 }
 
@@ -1314,50 +1292,63 @@ func TestParseWhisperMessage(t *testing.T) {
 		assertEmoteSlicesEqual(t, got.Emotes, test.want.Emotes)
 		assertStringsEqual(t, "ID", got.ID, test.want.ID)
 		assertStringsEqual(t, "Target", got.Target, test.want.Target)
-		if !got.User.equals(test.want.User) {
-			t.Errorf("User: got %v, want %v", got.User, test.want.User)
+		assertUsersEqual(t, got.User, test.want.User)
+	}
+}
+
+func assertBoolsEqual(t *testing.T, name string, got, want bool) {
+	if got != want {
+		t.Errorf("%v: got %v, want %v", name, got, want)
+	}
+}
+
+func assertDurationsEqual(t *testing.T, name string, got, want time.Duration) {
+	if got != want {
+		t.Errorf("%v: got %v, want %v", name, got, want)
+	}
+}
+
+func assertIntsEqual(t *testing.T, name string, got, want int) {
+	if got != want {
+		t.Errorf("%v: got %v, want %v", name, got, want)
+	}
+}
+
+func assertMessageTypesEqual(t *testing.T, got, want MessageType) {
+	if got != want {
+		t.Errorf("Type: got %v, want %v", got, want)
+	}
+}
+
+func assertStringMapsEqual(t *testing.T, name string, got, want map[string]string) {
+	if len(got) != len(want) {
+		t.Errorf("%v: len(got) %v, len(want) %v", name, len(got), len(want))
+	}
+	for k, wv := range want {
+		if gv, ok := got[k]; ok {
+			if gv != wv {
+				t.Errorf("%v[%v]: got %v, want %v", name, k, gv, wv)
+			}
+		} else {
+			t.Errorf("%v[%v] not created in got, want %v, ", name, k, wv)
 		}
 	}
 }
 
-func assertStringsEqual(t *testing.T, name, s1, s2 string) {
-	if s1 != s2 {
-		t.Errorf("%v: got %v, want %v", name, s1, s2)
+func assertStringsEqual(t *testing.T, name, got, want string) {
+	if got != want {
+		t.Errorf("%v: got %v, want %v", name, got, want)
 	}
 }
 
-func assertStringSlicesEqual(t *testing.T, name string, s1, s2 []string) {
-	if len(s1) != len(s2) {
-		t.Errorf("%v: len(got) %v, len(want) %v", name, len(s1), len(s2))
+func assertStringSlicesEqual(t *testing.T, name string, got, want []string) {
+	if len(got) != len(want) {
+		t.Errorf("%v: len(got) %v, len(want) %v", name, len(got), len(want))
 	}
-	for i := range s1 {
-		if s1[i] != s2[i] {
-			t.Errorf("%v[%v]: got %v, want %v", name, i, s1[i], s2[i])
+	for i := range got {
+		if got[i] != want[i] {
+			t.Errorf("%v[%v]: got %v, want %v", name, i, got[i], want[i])
 		}
-	}
-}
-
-func assertMessageTypesEqual(t *testing.T, t1, t2 MessageType) {
-	if t1 != t2 {
-		t.Errorf("Type: got %v, want %v", t1, t2)
-	}
-}
-
-func assertDurationsEqual(t *testing.T, name string, d1, d2 time.Duration) {
-	if d1 != d2 {
-		t.Errorf("%v: got %v, want %v", name, d1, d2)
-	}
-}
-
-func assertIntsEqual(t *testing.T, name string, i1, i2 int) {
-	if i1 != i2 {
-		t.Errorf("%v: got %v, want %v", name, i1, i2)
-	}
-}
-
-func assertBoolsEqual(t *testing.T, name string, b1, b2 bool) {
-	if b1 != b2 {
-		t.Errorf("%v: got %v, want %v", name, b1, b2)
 	}
 }
 
@@ -1375,94 +1366,32 @@ func assertEmoteSlicesEqual(t *testing.T, got, want []Emote) {
 	}
 }
 
-// TODO: update all equals messages to have context specific error triggers
-
-func (d1 *IRCData) equals(d2 *IRCData) bool {
-	if d1.Raw != d2.Raw ||
-		d1.Prefix != d2.Prefix ||
-		d1.Command != d2.Command {
-		return false
+func assertUsersEqual(t *testing.T, got, want *User) {
+	assertStringsEqual(t, "BadgeInfo", got.BadgeInfo, want.BadgeInfo)
+	if len(got.Badges) != len(want.Badges) {
+		t.Errorf("Badges: len(got) %v, len(want) %v", len(got.Badges), len(want.Badges))
 	}
-	if len(d1.Tags) != len(d2.Tags) {
-		return false
-	}
-	for k, v1 := range d1.Tags {
-		if v2, ok := d2.Tags[k]; ok {
-			if v1 != v2 {
-				return false
-			}
-		} else {
-			return false
+	for i := range got.Badges {
+		if got.Badges[i] != want.Badges[i] {
+			t.Errorf("Badges[%v]: got %v, want %v", i, got.Badges[i], want.Badges[i])
 		}
 	}
-	if len(d1.Params) != len(d2.Params) {
-		return false
-	}
-	for i, v := range d1.Params {
-		if v != d2.Params[i] {
-			return false
-		}
-	}
-	return true
+	assertBoolsEqual(t, "Broadcaster", got.Broadcaster, want.Broadcaster)
+	assertStringsEqual(t, "Color", got.Color, want.Color)
+	assertStringsEqual(t, "DisplayName", got.DisplayName, want.DisplayName)
+	assertBoolsEqual(t, "Mod", got.Mod, want.Mod)
+	assertStringsEqual(t, "Name", got.Name, want.Name)
+	assertBoolsEqual(t, "Subscriber", got.Subscriber, want.Subscriber)
+	assertBoolsEqual(t, "Turbo", got.Turbo, want.Turbo)
+	assertStringsEqual(t, "ID", got.ID, want.ID)
+	assertStringsEqual(t, "UserType", got.UserType, want.UserType)
+	assertBoolsEqual(t, "VIP", got.VIP, want.VIP)
 }
 
-func (t1 IRCTags) equals(t2 IRCTags) bool {
-	if len(t1) != len(t2) {
-		return false
-	}
-	for k, v1 := range t1 {
-		if v2, ok := t2[k]; ok {
-			if v1 != v2 {
-				return false
-			}
-		} else {
-			return false
-		}
-	}
-	return true
-}
-
-func (u1 *User) equals(u2 *User) bool {
-	if u1.BadgeInfo != u2.BadgeInfo {
-		return false
-	}
-	if len(u1.Badges) != len(u2.Badges) {
-		return false
-	}
-	for i, badge := range u1.Badges {
-		if badge != u2.Badges[i] {
-			return false
-		}
-	}
-	if u1.Broadcaster != u2.Broadcaster {
-		return false
-	}
-	if u1.Color != u2.Color {
-		return false
-	}
-	if u1.DisplayName != u2.DisplayName {
-		return false
-	}
-	if u1.Mod != u2.Mod {
-		return false
-	}
-	if u1.Name != u2.Name {
-		return false
-	}
-	if u1.Subscriber != u2.Subscriber {
-		return false
-	}
-	if u1.Turbo != u2.Turbo {
-		return false
-	}
-	if u1.ID != u2.ID {
-		return false
-	}
-	if u1.UserType != u2.UserType {
-		return false
-	}
-	if u1.VIP != u2.VIP {
-		return false
-	}
-	return true
+func assertIRCDataEqual(t *testing.T, got, want *IRCData) {
+	assertStringsEqual(t, "Raw", got.Raw, want.Raw)
+	assertStringMapsEqual(t, "Tags", got.Tags, want.Tags)
+	assertStringsEqual(t, "Prefix", got.Prefix, want.Prefix)
+	assertStringsEqual(t, "Command", got.Command, want.Command)
+	assertStringSlicesEqual(t, "Params", got.Params, want.Params)
 }

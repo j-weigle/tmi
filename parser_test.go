@@ -1271,6 +1271,26 @@ func TestParseWhisperMessage(t *testing.T) {
 				},
 			},
 		},
+		{
+			"@badges=;color=#FFFF00;display-name=Boris;emotes=;message-id=2;thread-id=119302705_555556384;turbo=1;user-id=123456789;user-type= :boris!boris@boris.tmi.twitch.tv WHISPER bobby :a whisper without an emote",
+			WhisperMessage{
+				IRCType: "WHISPER",
+				Type:    WHISPER,
+				Text:    "a whisper without an emote",
+				Emotes:  []Emote{},
+				ID:      "2",
+				Target:  "bobby",
+				User: &User{
+					Badges:      []Badge{},
+					Color:       "#FFFF00",
+					DisplayName: "Boris",
+					Name:        "boris",
+					Turbo:       true,
+					ID:          "123456789",
+					VIP:         false,
+				},
+			},
+		},
 	}
 
 	for i := range tests {

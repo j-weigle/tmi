@@ -137,32 +137,25 @@ func TestParseIRCMessage(t *testing.T) {
 }
 
 func TestEscapeIRCTagValues(t *testing.T) {
-	testTags := make(IRCTags)
-	testTags["t1"] = `ronni\shas\ssubscribed\sfor\s6\smonths!`
-	testTags["t2"] = `TWW2\sgifted\sa\sTier\s1\ssub\sto\sMr_Woodchuck!`
-	testTags["t3"] = `An\sanonymous\suser\sgifted\sa\sTier\s1\ssub\sto\sTenureCalculator!\s`
-	testTags["t4"] = `15\sraiders\sfrom\sTestChannel\shave\sjoined\n!`
-	testTags["t5"] = `Seventoes\sis\snew\shere!`
-	testTags["t6"] = `\\I\shave\sall\r\n\sthe\ssymbols\:\s`
+	tests := make(IRCTags)
+	tests["t1"] = `ronni\shas\ssubscribed\sfor\s6\smonths!`
+	tests["t2"] = `TWW2\sgifted\sa\sTier\s1\ssub\sto\sMr_Woodchuck!`
+	tests["t3"] = `An\sanonymous\suser\sgifted\sa\sTier\s1\ssub\sto\sTenureCalculator!\s`
+	tests["t4"] = `15\sraiders\sfrom\sTestChannel\shave\sjoined\n!`
+	tests["t5"] = `Seventoes\sis\snew\shere!`
+	tests["t6"] = `\\I\shave\sall\r\n\sthe\ssymbols\:\s`
 
-	tests := []struct {
-		key  string
-		want string
-	}{
-		{"t1", "ronni has subscribed for 6 months!"},
-		{"t2", "TWW2 gifted a Tier 1 sub to Mr_Woodchuck!"},
-		{"t3", "An anonymous user gifted a Tier 1 sub to TenureCalculator!"},
-		{"t4", "15 raiders from TestChannel have joined\n!"},
-		{"t5", "Seventoes is new here!"},
-		{"t6", "\\I have all\r\n the symbols;"},
+	want := IRCTags{
+		"t1": "ronni has subscribed for 6 months!",
+		"t2": "TWW2 gifted a Tier 1 sub to Mr_Woodchuck!",
+		"t3": "An anonymous user gifted a Tier 1 sub to TenureCalculator!",
+		"t4": "15 raiders from TestChannel have joined\n!",
+		"t5": "Seventoes is new here!",
+		"t6": "\\I have all\r\n the symbols;",
 	}
 
-	testTags.EscapeIRCTagValues()
-	for _, v := range tests {
-		if testTags[v.key] != v.want {
-			t.Errorf("got: %v, want: %v\n", testTags[v.key], v.want)
-		}
-	}
+	tests.EscapeIRCTagValues()
+	assertStringMapsEqual(t, "Tags", tests, want)
 }
 
 func TestParseClearChatMessage(t *testing.T) {
@@ -1257,13 +1250,13 @@ func TestParseWhisperMessage(t *testing.T) {
 		want WhisperMessage
 	}{
 		{
-			"@badges=;color=#FFFFFF;display-name=Bobby;emotes=25:45-49;message-id=1;thread-id=119302705_555556384;turbo=0;user-id=123456789;user-type= :bobby!bobby@bobby.tmi.twitch.tv WHISPER billy :hey look I'm an action whisper with an emote Kappa",
+			"@badges=;color=#FFFFFF;display-name=Bobby;emotes=25:37-41;message-id=1;thread-id=119302705_555556384;turbo=0;user-id=123456789;user-type= :bobby!bobby@bobby.tmi.twitch.tv WHISPER billy :hey look I'm a whisper with an emote Kappa",
 			WhisperMessage{
 				IRCType: "WHISPER",
 				Type:    WHISPER,
-				Text:    "hey look I'm an action whisper with an emote Kappa",
+				Text:    "hey look I'm a whisper with an emote Kappa",
 				Emotes: []Emote{
-					{"25", "Kappa", []EmotePosition{{45, 49}}},
+					{"25", "Kappa", []EmotePosition{{37, 41}}},
 				},
 				ID:     "1",
 				Target: "billy",

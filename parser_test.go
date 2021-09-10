@@ -177,6 +177,44 @@ func TestParseTimeStamp(t *testing.T) {
 	}
 }
 
+func TestParseReplyParentMessage(t *testing.T) {
+	tests := []struct {
+		in   IRCTags
+		want ReplyParentMsg
+	}{
+		{
+			IRCTags{
+				"reply-parent-msg-id": "b34ccfc7-4977-403a-8a94-33c6bac34fb8",
+			},
+			ReplyParentMsg{ID: "b34ccfc7-4977-403a-8a94-33c6bac34fb8"},
+		},
+		{
+			IRCTags{
+				"reply-parent-display-name": "ThisIsSparta",
+				"reply-parent-msg-id":       "987654321",
+				"reply-parent-msg-body":     "pigs are able to fly now",
+				"reply-parent-user-id":      "123456789",
+				"reply-parent-user-login":   "thisissparta",
+			},
+			ReplyParentMsg{
+				"ThisIsSparta",
+				"987654321",
+				"pigs are able to fly now",
+				"123456789",
+				"thisissparta",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		got := ParseReplyParentMessage(test.in)
+		want := test.want
+		if got != want {
+			t.Errorf("ParseReplyParentMessage: got %v, want %v", got, want)
+		}
+	}
+}
+
 func TestParseClearChatMessage(t *testing.T) {
 	tests := []struct {
 		in   string

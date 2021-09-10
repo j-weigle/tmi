@@ -158,6 +158,25 @@ func TestEscapeIRCTagValues(t *testing.T) {
 	assertStringMapsEqual(t, "Tags", tests, want)
 }
 
+func TestParseTimeStamp(t *testing.T) {
+	tests := []struct {
+		in   string
+		want time.Time
+	}{
+		{"1568505600739", time.Date(2019, time.September, 14, 20, 0, 0, 739*1e6, time.Local)},
+		{"1568505608390", time.Date(2019, time.September, 14, 20, 0, 8, 390*1e6, time.Local)},
+		{"1630887934441", time.Date(2021, time.September, 5, 20, 25, 34, 441*1e6, time.Local)},
+	}
+
+	for _, test := range tests {
+		got := ParseTimeStamp(test.in)
+		want := test.want
+		if got != want {
+			t.Errorf("ParseTimeStamp: got %v, want %v", got, want)
+		}
+	}
+}
+
 func TestParseClearChatMessage(t *testing.T) {
 	tests := []struct {
 		in   string

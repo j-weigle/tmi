@@ -38,10 +38,14 @@ func TestJoinThreeChannels(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip:TestJoinThreeChannels, reason:short mode")
 	}
-	tests := []string{"#twitch", "#testchannel", "#twitchmedia"}
-	results := make(map[string]bool)
-	for _, test := range tests {
-		results[test] = false
+	tests := map[string]bool{
+		"#twitch":      false,
+		"#testchannel": false,
+		"#twitchmedia": false,
+	}
+	channels := make([]string, 0, len(tests))
+	for ch := range tests {
+		channels = append(channels, ch)
 	}
 
 	config := NewClientConfig()
@@ -49,21 +53,22 @@ func TestJoinThreeChannels(t *testing.T) {
 	c := NewClient(config)
 
 	c.OnJoinMessage(func(m JoinMessage) {
-		results[m.Channel] = true
+		tests[m.Channel] = true
 	})
 
-	err := c.Join(tests...)
+	err := c.Join(channels...)
 	if err != nil {
 		t.Error(err)
 	}
 
 	go func() {
-		// join waits 600 milliseconds between joins, give it extra time
-		time.Sleep(time.Second * 3)
-		for _, test := range tests {
-			if joined, ok := results[test]; !(ok && joined) {
-				t.Errorf("did not join %v", test)
+		// give it a second to join the channels and receive the join messages
+		time.Sleep(time.Second)
+		for ch := range tests {
+			if joined := tests[ch]; !joined {
+				t.Errorf("did not join %v", ch)
 			}
+			c.Part(ch)
 		}
 		c.Disconnect()
 	}()
@@ -77,10 +82,13 @@ func TestPartChannels(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip:TestPartChannels, reason:short mode")
 	}
-	tests := []string{"#twitch", "#testchannel"}
-	results := make(map[string]bool)
-	for _, test := range tests {
-		results[test] = false
+	tests := map[string]bool{
+		"#twitch":      false,
+		"#testchannel": false,
+	}
+	channels := make([]string, 0, len(tests))
+	for ch := range tests {
+		channels = append(channels, ch)
 	}
 
 	config := NewClientConfig()
@@ -88,36 +96,33 @@ func TestPartChannels(t *testing.T) {
 	c := NewClient(config)
 
 	c.OnJoinMessage(func(m JoinMessage) {
-		results[m.Channel] = true
+		tests[m.Channel] = true
 	})
 
 	c.OnPartMessage(func(m PartMessage) {
-		results[m.Channel] = false
+		tests[m.Channel] = false
 	})
 
-	err := c.Join(tests...)
+	err := c.Join(channels...)
 	if err != nil {
 		t.Error(err)
 	}
 
 	go func() {
-		// join waits 600 milliseconds between joins, give it extra time
-		time.Sleep(time.Second * 2)
-		for _, test := range tests {
-			if joined, ok := results[test]; !(ok && joined) {
-				t.Errorf("did not join %v", test)
+		// give it a second to join the channels and receive the join messages
+		time.Sleep(time.Second)
+		for ch := range tests {
+			if joined := tests[ch]; !joined {
+				t.Errorf("did not join %v", ch)
 			}
-		}
-		for _, test := range tests {
-			err := c.Part(test)
+			err := c.Part(ch)
 			if err != nil {
 				t.Error(err)
 			}
+			// give it a second to part the channel and receive the part message
 			time.Sleep(time.Second)
-			if joined, ok := results[test]; ok {
-				if joined {
-					t.Errorf("did not part %v", test)
-				}
+			if joined := tests[ch]; joined {
+				t.Errorf("did not part %v", ch)
 			}
 		}
 		c.Disconnect()

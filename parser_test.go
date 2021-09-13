@@ -6,6 +6,85 @@ import (
 	"time"
 )
 
+func TestEscapeIRCTagValues(t *testing.T) {
+	tests := make(IRCTags)
+	tests["t1"] = `ronni\shas\ssubscribed\sfor\s6\smonths!`
+	tests["t2"] = `TWW2\sgifted\sa\sTier\s1\ssub\sto\sMr_Woodchuck!`
+	tests["t3"] = `An\sanonymous\suser\sgifted\sa\sTier\s1\ssub\sto\sTenureCalculator!\s`
+	tests["t4"] = `15\sraiders\sfrom\sTestChannel\shave\sjoined\n!`
+	tests["t5"] = `Seventoes\sis\snew\shere!`
+	tests["t6"] = `\\I\shave\sall\r\n\sthe\ssymbols\:\s`
+
+	want := IRCTags{
+		"t1": "ronni has subscribed for 6 months!",
+		"t2": "TWW2 gifted a Tier 1 sub to Mr_Woodchuck!",
+		"t3": "An anonymous user gifted a Tier 1 sub to TenureCalculator!",
+		"t4": "15 raiders from TestChannel have joined\n!",
+		"t5": "Seventoes is new here!",
+		"t6": "\\I have all\r\n the symbols;",
+	}
+
+	tests.EscapeIRCTagValues()
+	assertStringMapsEqual(t, "Tags", tests, want)
+}
+
+func TestParseTimeStamp(t *testing.T) {
+	tests := []struct {
+		in   string
+		want time.Time
+	}{
+		{"1568505600739", time.Date(2019, time.September, 14, 20, 0, 0, 739*1e6, time.Local)},
+		{"1568505608390", time.Date(2019, time.September, 14, 20, 0, 8, 390*1e6, time.Local)},
+		{"1630887934441", time.Date(2021, time.September, 5, 20, 25, 34, 441*1e6, time.Local)},
+	}
+
+	for _, test := range tests {
+		got := ParseTimeStamp(test.in)
+		want := test.want
+		if got != want {
+			t.Errorf("ParseTimeStamp: got %v, want %v", got, want)
+		}
+	}
+}
+
+func TestParseReplyParentMessage(t *testing.T) {
+	tests := []struct {
+		in   IRCTags
+		want ReplyParentMsg
+	}{
+		{
+			IRCTags{
+				"reply-parent-msg-id": "b34ccfc7-4977-403a-8a94-33c6bac34fb8",
+			},
+			ReplyParentMsg{ID: "b34ccfc7-4977-403a-8a94-33c6bac34fb8"},
+		},
+		{
+			IRCTags{
+				"reply-parent-display-name": "ThisIsSparta",
+				"reply-parent-msg-id":       "987654321",
+				"reply-parent-msg-body":     "pigs are able to fly now",
+				"reply-parent-user-id":      "123456789",
+				"reply-parent-user-login":   "thisissparta",
+			},
+			ReplyParentMsg{
+				"ThisIsSparta",
+				"987654321",
+				"pigs are able to fly now",
+				"123456789",
+				"thisissparta",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		got := ParseReplyParentMessage(test.in)
+		want := test.want
+		if got != want {
+			t.Errorf("ParseReplyParentMessage: got %v, want %v", got, want)
+		}
+	}
+}
+
 func TestParseIRCMessage(t *testing.T) {
 	t.Parallel()
 	type parseIRCTest struct {
@@ -136,85 +215,6 @@ func TestParseIRCMessage(t *testing.T) {
 	}
 }
 
-func TestEscapeIRCTagValues(t *testing.T) {
-	tests := make(IRCTags)
-	tests["t1"] = `ronni\shas\ssubscribed\sfor\s6\smonths!`
-	tests["t2"] = `TWW2\sgifted\sa\sTier\s1\ssub\sto\sMr_Woodchuck!`
-	tests["t3"] = `An\sanonymous\suser\sgifted\sa\sTier\s1\ssub\sto\sTenureCalculator!\s`
-	tests["t4"] = `15\sraiders\sfrom\sTestChannel\shave\sjoined\n!`
-	tests["t5"] = `Seventoes\sis\snew\shere!`
-	tests["t6"] = `\\I\shave\sall\r\n\sthe\ssymbols\:\s`
-
-	want := IRCTags{
-		"t1": "ronni has subscribed for 6 months!",
-		"t2": "TWW2 gifted a Tier 1 sub to Mr_Woodchuck!",
-		"t3": "An anonymous user gifted a Tier 1 sub to TenureCalculator!",
-		"t4": "15 raiders from TestChannel have joined\n!",
-		"t5": "Seventoes is new here!",
-		"t6": "\\I have all\r\n the symbols;",
-	}
-
-	tests.EscapeIRCTagValues()
-	assertStringMapsEqual(t, "Tags", tests, want)
-}
-
-func TestParseTimeStamp(t *testing.T) {
-	tests := []struct {
-		in   string
-		want time.Time
-	}{
-		{"1568505600739", time.Date(2019, time.September, 14, 20, 0, 0, 739*1e6, time.Local)},
-		{"1568505608390", time.Date(2019, time.September, 14, 20, 0, 8, 390*1e6, time.Local)},
-		{"1630887934441", time.Date(2021, time.September, 5, 20, 25, 34, 441*1e6, time.Local)},
-	}
-
-	for _, test := range tests {
-		got := ParseTimeStamp(test.in)
-		want := test.want
-		if got != want {
-			t.Errorf("ParseTimeStamp: got %v, want %v", got, want)
-		}
-	}
-}
-
-func TestParseReplyParentMessage(t *testing.T) {
-	tests := []struct {
-		in   IRCTags
-		want ReplyParentMsg
-	}{
-		{
-			IRCTags{
-				"reply-parent-msg-id": "b34ccfc7-4977-403a-8a94-33c6bac34fb8",
-			},
-			ReplyParentMsg{ID: "b34ccfc7-4977-403a-8a94-33c6bac34fb8"},
-		},
-		{
-			IRCTags{
-				"reply-parent-display-name": "ThisIsSparta",
-				"reply-parent-msg-id":       "987654321",
-				"reply-parent-msg-body":     "pigs are able to fly now",
-				"reply-parent-user-id":      "123456789",
-				"reply-parent-user-login":   "thisissparta",
-			},
-			ReplyParentMsg{
-				"ThisIsSparta",
-				"987654321",
-				"pigs are able to fly now",
-				"123456789",
-				"thisissparta",
-			},
-		},
-	}
-
-	for _, test := range tests {
-		got := ParseReplyParentMessage(test.in)
-		want := test.want
-		if got != want {
-			t.Errorf("ParseReplyParentMessage: got %v, want %v", got, want)
-		}
-	}
-}
-
 func TestParseClearChatMessage(t *testing.T) {
 	tests := []struct {
 		in   string
@@ -278,6 +278,41 @@ func TestParseClearChatMessage(t *testing.T) {
 		assertMessageTypesEqual(t, got.Type, test.want.Type)
 		assertDurationsEqual(t, "BanDuration", got.BanDuration, test.want.BanDuration)
 		assertStringsEqual(t, "Target", got.Target, test.want.Target)
+	}
+}
+
+func TestParseUnsetMessage(t *testing.T) {
+	tests := []struct {
+		in   string
+		want UnsetMessage
+	}{
+		{
+			":tmi.twitch.tv 002 <user> :Your host is tmi.twitch.tv",
+			UnsetMessage{
+				IRCType: "002",
+				Text:    ":tmi.twitch.tv 002 <user> :Your host is tmi.twitch.tv",
+				Type:    UNSET,
+			},
+		},
+		{
+			":tmi.twitch.tv 003 <user> :This server is rather new",
+			UnsetMessage{
+				IRCType: "003",
+				Text:    ":tmi.twitch.tv 003 <user> :This server is rather new",
+				Type:    UNSET,
+			},
+		},
+	}
+
+	for i := range tests {
+		var test = tests[i]
+
+		ircData, _ := parseIRCMessage(test.in)
+		got := parseUnsetMessage(ircData)
+
+		assertStringsEqual(t, "IRCType", got.IRCType, test.want.IRCType)
+		assertStringsEqual(t, "Text", got.Text, test.want.Text)
+		assertMessageTypesEqual(t, got.Type, test.want.Type)
 	}
 }
 
@@ -1194,8 +1229,8 @@ func TestParsePrivateMessage(t *testing.T) {
 			PrivateMessage{
 				Channel: "#moistcr1tikal",
 				IRCType: "PRIVMSG",
-				Type:    PRIVMSG,
 				Text:    "Xrd is insane",
+				Type:    PRIVMSG,
 				Action:  false,
 				Bits:    0,
 				Emotes:  []Emote{},
@@ -1224,8 +1259,8 @@ func TestParsePrivateMessage(t *testing.T) {
 			PrivateMessage{
 				Channel: "#hasanabi",
 				IRCType: "PRIVMSG",
-				Type:    PRIVMSG,
 				Text:    "hasO",
+				Type:    PRIVMSG,
 				Action:  false,
 				Bits:    0,
 				Emotes: []Emote{
@@ -1257,8 +1292,8 @@ func TestParsePrivateMessage(t *testing.T) {
 			PrivateMessage{
 				Channel: "#sophiabot",
 				IRCType: "PRIVMSG",
-				Type:    PRIVMSG,
 				Text:    "banned",
+				Type:    PRIVMSG,
 				Action:  true,
 				Bits:    0,
 				Emotes:  []Emote{},
@@ -1310,8 +1345,8 @@ func TestParseWhisperMessage(t *testing.T) {
 			"@badges=;color=#FFFFFF;display-name=Bobby;emotes=25:37-41;message-id=1;thread-id=119302705_555556384;turbo=0;user-id=123456789;user-type= :bobby!bobby@bobby.tmi.twitch.tv WHISPER billy :hey look I'm a whisper with an emote Kappa",
 			WhisperMessage{
 				IRCType: "WHISPER",
-				Type:    WHISPER,
 				Text:    "hey look I'm a whisper with an emote Kappa",
+				Type:    WHISPER,
 				Emotes: []Emote{
 					{"25", "Kappa", []EmotePosition{{37, 41}}},
 				},
@@ -1332,8 +1367,8 @@ func TestParseWhisperMessage(t *testing.T) {
 			"@badges=;color=#FFFF00;display-name=Boris;emotes=;message-id=2;thread-id=119302705_555556384;turbo=1;user-id=123456789;user-type= :boris!boris@boris.tmi.twitch.tv WHISPER bobby :a whisper without an emote",
 			WhisperMessage{
 				IRCType: "WHISPER",
-				Type:    WHISPER,
 				Text:    "a whisper without an emote",
+				Type:    WHISPER,
 				Emotes:  []Emote{},
 				ID:      "2",
 				Target:  "bobby",

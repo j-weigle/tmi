@@ -15,7 +15,7 @@ func (c *Client) handleIRCMessage(rawMessage string) error {
 		return c.unsetHandler(data)
 	}
 
-	var err = c.tmiHandlers(data)
+	var err = c.handleIRCData(data)
 	if err == errUnsetIRCCommand || err == errUnrecognizedIRCCommand {
 		return c.unsetHandler(data)
 	}
@@ -29,7 +29,7 @@ func (c *Client) unsetHandler(data IRCData) error {
 	return nil
 }
 
-func (c *Client) tmiHandlers(data IRCData) error {
+func (c *Client) handleIRCData(data IRCData) error {
 	switch data.Command {
 	case "001": // RPL_WELCOME        RFC2812 ; "Welcome, GLHF"
 		c.connected.set(true)

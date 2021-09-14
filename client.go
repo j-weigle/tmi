@@ -79,7 +79,7 @@ func (c *Client) connect(u url.URL) error {
 
 	// Establish a connection to the URL defined by u.
 	if c.conn, _, err = websocket.DefaultDialer.Dial(u.String(), nil); err != nil {
-		return err
+		return errReconnect
 	}
 
 	// Waitgroup and context for goroutine control.

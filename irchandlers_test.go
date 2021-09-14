@@ -154,7 +154,7 @@ func TestTmiHandlers(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		got := c.tmiHandlers(in)
+		got := c.handleIRCData(in)
 		if got != test.want {
 			t.Errorf("got error: %v, want error: %v", got, test.want)
 		}

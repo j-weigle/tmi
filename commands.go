@@ -118,11 +118,6 @@ func (c *Client) Join(channels ...string) error {
 	return nil
 }
 
-// OnDone sets the callback function for when a client is done to cb. Useful for running a client in a goroutine.
-func (c *Client) OnDone(cb func(fatal error)) {
-	c.done = cb
-}
-
 // Part leaves channels.
 func (c *Client) Part(channels ...string) error {
 	if channels == nil || len(channels) < 1 {
@@ -164,6 +159,197 @@ func (c *Client) Say(channel string, message string) error {
 	return nil
 }
 
+// Action sends a message as a /me, or action, message.
+func (c *Client) Action(channel, message string) error {
+	if len(message) > 490 {
+		return errors.New("message must be shorter than 490 characters")
+	}
+	return c.Say(channel, "\u0001ACTION "+message+"\u0001")
+}
+
+// Ban bans user from reading or sending messages in channel with optional reason.
+func (c *Client) Ban(channel, user, reason string) error {
+	if len(reason)+len(user) > 490 {
+		return errors.New("user + reason must be shorter than 490 characters")
+	}
+	if reason != "" {
+		return c.Say(channel, "/ban "+user+" "+reason)
+	}
+	return c.Say(channel, "/ban "+user)
+}
+
+// Unban unbans user from channel.
+func (c *Client) Unban(channel, user string) error {
+	return c.Say(channel, "/unban "+user)
+}
+
+// Clear clears all chat messages in channel.
+func (c *Client) Clear(channel string) error {
+	return c.Say(channel, "/clear")
+}
+
+// Color changes the color of the username currently logged in.
+func (c *Client) Color(color string) error {
+	return c.Say("#"+c.config.Identity.username, "/color "+color)
+}
+
+// Commercial starts a a commercial break in channel that is seconds long.
+// seconds should be 30, 60, 90, 120, 150, or 180.
+func (c *Client) Commercial(channel, seconds string) error {
+	return c.Say(channel, "/commercial "+seconds)
+}
+
+// Delete deletes a single message in channel identified by messageID.
+// messageID for a PrivateMessage is PrivateMessage.ID.
+// messageID for a ReplyParentMsg is ReplyParentMsg.ID.
+func (c *Client) Delete(channel, messageID string) error {
+	return c.Say(channel, "/delete "+messageID)
+}
+
+// EmoteOnly turns on emoteonly mode in channel.
+func (c *Client) EmoteOnly(channel string) error {
+	return c.Say(channel, "/emoteonly")
+}
+
+// EmoteOnlyOff turns off emoteonly mode in channel.
+func (c *Client) EmoteOnlyOff(channel string) error {
+	return c.Say(channel, "/emoteonlyoff")
+}
+
+// Followers turns on followersonly mode in channel with duration being how long a
+// user must be following before they can send messages.
+func (c *Client) Followers(channel, duration string) error {
+	return c.Say(channel, "/followers "+duration)
+}
+
+// FollowersOff turns off followersonly mode in channel.
+func (c *Client) FollowersOff(channel string) error {
+	return c.Say(channel, "/followersoff")
+}
+
+// Host starts hosting target in channel.
+func (c *Client) Host(channel, target string) error {
+	return c.Say(channel, "/host "+target)
+}
+
+// Unhost stops hosting in channel.
+func (c *Client) Unhost(channel string) error {
+	return c.Say(channel, "/unhost")
+}
+
+// Marker adds a stream marker in channel with optional description.
+func (c *Client) Marker(channel, description string) error {
+	if len(description) > 490 {
+		return errors.New("description must be shorter than 490 characters")
+	}
+	if description != "" {
+		return c.Say(channel, "/marker "+description)
+	}
+	return c.Say(channel, "/marker")
+}
+
+// Mod makes user a moderator in channel.
+func (c *Client) Mod(channel, user string) error {
+	return c.Say(channel, "/mod "+user)
+}
+
+// Unmod makes user no longer a moderator in channel.
+func (c *Client) Unmod(channel, user string) error {
+	return c.Say(channel, "/unmod "+user)
+}
+
+// Mods requests the list of mods for channel. Use OnNoticeMessage to get the result.
+// NoticeMessage.Notice of type "mods" indicates that NoticeMessage.Mods contains the result.
+func (c *Client) Mods(channel string) error {
+	return c.Say(channel, "/mods")
+}
+
+// R9kBeta turns on r9kbeta(uniquechat) mode in channel.
+func (c *Client) R9kBeta(channel string) error {
+	return c.Say(channel, "/r9kbeta")
+}
+
+// R9kMode turns on r9kbeta(uniquechat) mode in channel.
+func (c *Client) R9kMode(channel string) error {
+	return c.R9kBeta(channel)
+}
+
+// Uniquechat turns on uniquechat(r9kbeta) mode in channel.
+func (c *Client) Uniquechat(channel string) error {
+	return c.R9kBeta(channel)
+}
+
+// R9kBetaOff turns off r9kbeta(uniquechat) mode in channel.
+func (c *Client) R9kBetaOff(channel string) error {
+	return c.Say(channel, "/r9kbetaoff")
+}
+
+// R9kModeOff turns off r9kbeta(uniquechat) mode in channel.
+func (c *Client) R9kModeOff(channel string) error {
+	return c.R9kBetaOff(channel)
+}
+
+// UniquechatOff turns off uniquechat(r9kbeta) mode in channel.
+func (c *Client) UniquechatOff(channel string) error {
+	return c.R9kBetaOff(channel)
+}
+
+// Raid starts a raid on channel to target.
+func (c *Client) Raid(channel, target string) error {
+	return c.Say(channel, "/raid "+target)
+}
+
+// Unraid cancels a raid on channel.
+func (c *Client) Unraid(channel string) error {
+	return c.Say(channel, "/unraid")
+}
+
+// Slow turns on slow mode in channel with seconds delay between users sending messages.
+func (c *Client) Slow(channel, seconds string) error {
+	return c.Say(channel, "/slow "+seconds)
+}
+
+// SlowOff turns off slow mode in channel.
+func (c *Client) SlowOff(channel string) error {
+	return c.Say(channel, "/slowoff")
+}
+
+// Subscribers turns on subscribers only mode in channel.
+func (c *Client) Subscribers(channel string) error {
+	return c.Say(channel, "/subscribers")
+}
+
+// SubscribersOff turns off subscribers only mode in channel.
+func (c *Client) SubscribersOff(channel string) error {
+	return c.Say(channel, "/subscribersoff")
+}
+
+// Timeout prevents user in channel from chatting for seconds and clears their messsages.
+func (c *Client) Timeout(channel, user, seconds string) error {
+	return c.Say(channel, "/timeout "+user+" "+seconds)
+}
+
+// Untimeout removes a timeout for user in channel.
+func (c *Client) Untimeout(channel, user string) error {
+	return c.Say(channel, "/untimeout "+user)
+}
+
+// VIP makes user a vip in channel.
+func (c *Client) VIP(channel, user string) error {
+	return c.Say(channel, "/vip "+user)
+}
+
+// UnVIP makes user no longer a vip in channel.
+func (c *Client) UnVIP(channel, user string) error {
+	return c.Say(channel, "/unvip "+user)
+}
+
+// VIPs requests the list of vips for channel. Use OnNoticeMessage to get the result.
+// NoticeMessage.Notice of type "vips" indicates that NoticeMessage.VIPs contains the result.
+func (c *Client) VIPs(channel string) error {
+	return c.Say(channel, "/vips")
+}
+
 // SetJoinRateLimit sets the RateLimiter for JOIN commands to settings in RateLimit.
 func (c *Client) SetJoinRateLimit(rl RateLimit) {
 	c.rLimiterJoins = NewRateLimiter(rl)
@@ -172,6 +358,11 @@ func (c *Client) SetJoinRateLimit(rl RateLimit) {
 // UpdatePassword updates the password the client uses for authentication.
 func (c *Client) UpdatePassword(password string) {
 	c.config.Identity.SetPassword(password)
+}
+
+// OnDone sets the callback function for when a client is done to cb. Useful for running a client in a goroutine.
+func (c *Client) OnDone(cb func(fatal error)) {
+	c.done = cb
 }
 
 // OnUnsetMessage sets the callback for when an unrecognized, non-handled, or unparsable message type is received.

@@ -210,3 +210,37 @@ func TestUpdatePassword(t *testing.T) {
 		t.Errorf("got %v, want %v", c.config.Identity.password, want)
 	}
 }
+
+func TestAction(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{
+			"",
+			"PRIVMSG #channel :\u0001ACTION \u0001",
+		},
+		{
+			"jumps for joy",
+			"PRIVMSG #channel :\u0001ACTION jumps for joy\u0001",
+		},
+	}
+
+	c := NewClient(NewClientConfig())
+	for i := range tests {
+		var test = tests[i]
+		err := c.Action("#channel", test.in)
+		if err != nil {
+			t.Error(err)
+		}
+		got := <-c.outbound
+		if got != test.want {
+			t.Errorf("got %v, want %v", got, test.want)
+		}
+	}
+
+	err := c.Action("#channel", strings.Repeat("x", 491))
+	if err == nil {
+		t.Errorf("expected message too long error")
+	}
+}

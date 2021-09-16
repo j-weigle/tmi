@@ -244,3 +244,66 @@ func TestAction(t *testing.T) {
 		t.Errorf("expected message too long error")
 	}
 }
+
+func TestBan(t *testing.T) {
+	type UserReason struct {
+		User   string
+		Reason string
+	}
+	tests := []struct {
+		in   UserReason
+		want string
+	}{
+		{
+			UserReason{"bobby", "being rude"},
+			"PRIVMSG #channel :/ban bobby being rude",
+		},
+		{
+			UserReason{"billy", ""},
+			"PRIVMSG #channel :/ban billy",
+		},
+	}
+
+	c := NewClient(NewClientConfig())
+	for i := range tests {
+		var test = tests[i]
+		err := c.Ban("#channel", test.in.User, test.in.Reason)
+		if err != nil {
+			t.Error(err)
+		}
+		got := <-c.outbound
+		if got != test.want {
+			t.Errorf("got %v, want %v", got, test.want)
+		}
+	}
+	err := c.Ban("#channel", "anyone", strings.Repeat("x", 491))
+	if err == nil {
+		t.Errorf("expected message too long error")
+	}
+}
+
+func TestUnban(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Unban("#channel", "user")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/unban user"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestClear(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Clear("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/clear"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}

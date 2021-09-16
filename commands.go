@@ -227,7 +227,7 @@ func (c *Client) FollowersOff(channel string) error {
 	return c.Say(channel, "/followersoff")
 }
 
-// Host starts hosting target in channel.
+// Host starts hosting target in channel. Trims off # from beginning of target.
 func (c *Client) Host(channel, target string) error {
 	target = strings.TrimPrefix(target, "#")
 	return c.Say(channel, "/host "+target)
@@ -295,7 +295,7 @@ func (c *Client) UniquechatOff(channel string) error {
 	return c.R9kBetaOff(channel)
 }
 
-// Raid starts a raid on channel to target.
+// Raid starts a raid on channel to target. Trims off # from beginning of target.
 func (c *Client) Raid(channel, target string) error {
 	target = strings.TrimPrefix(target, "#")
 	return c.Say(channel, "/raid "+target)

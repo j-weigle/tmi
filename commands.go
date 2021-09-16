@@ -326,7 +326,10 @@ func (c *Client) SubscribersOff(channel string) error {
 
 // Timeout prevents user in channel from chatting for seconds and clears their messsages.
 func (c *Client) Timeout(channel, user, seconds string) error {
-	return c.Say(channel, "/timeout "+user+" "+seconds)
+	if seconds != "" {
+		return c.Say(channel, "/timeout "+user+" "+seconds)
+	}
+	return c.Say(channel, "/timeout "+user)
 }
 
 // Untimeout removes a timeout for user in channel.

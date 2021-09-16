@@ -307,3 +307,401 @@ func TestClear(t *testing.T) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 }
+
+func TestColor(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Color("#AABBCC")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG # :/color #AABBCC"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	c.config.Identity.username = "name"
+	err = c.Color("#AABBCC")
+	if err != nil {
+		t.Error(err)
+	}
+	want = "PRIVMSG #name :/color #AABBCC"
+	got = <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestCommercial(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Commercial("#channel", "30")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/commercial 30"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Delete("#channel", "1234-5678")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/delete 1234-5678"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestEmoteOnly(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.EmoteOnly("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/emoteonly"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestEmoteOnlyOff(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.EmoteOnlyOff("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/emoteonlyoff"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestFollowers(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Followers("#channel", "10m")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/followers 10m"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestFollowersOff(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.FollowersOff("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/followersoff"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestHost(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Host("#channel", "#target")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/host target"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestUnhost(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Unhost("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/unhost"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestMarker(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Marker("#channel", "")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/marker"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	err = c.Marker("#channel", "test")
+	if err != nil {
+		t.Error(err)
+	}
+	want = "PRIVMSG #channel :/marker test"
+	got = <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestMod(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Mod("#channel", "user")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/mod user"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestUnmod(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Unmod("#channel", "user")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/unmod user"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestMods(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Mods("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/mods"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestR9kBetaAndAliases(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.R9kBeta("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	err = c.R9kMode("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	err = c.Uniquechat("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/r9kbeta"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	got = <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	got = <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestR9kBetaOffAndAliases(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.R9kBetaOff("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	err = c.R9kModeOff("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	err = c.UniquechatOff("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/r9kbetaoff"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	got = <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	got = <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestRaid(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Raid("#channel", "target")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/raid target"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestUnraid(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Unraid("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/unraid"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestSlow(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Slow("#channel", "3")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/slow 3"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestSlowOff(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.SlowOff("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/slowoff"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestSubscribers(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Subscribers("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/subscribers"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestSubscribersOff(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.SubscribersOff("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/subscribersoff"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestTimeout(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Timeout("#channel", "user", "")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/timeout user"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	err = c.Timeout("#channel", "user", "30")
+	if err != nil {
+		t.Error(err)
+	}
+	want = "PRIVMSG #channel :/timeout user 30"
+	got = <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestUntimeout(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.Untimeout("#channel", "user")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/untimeout user"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestVIP(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.VIP("#channel", "user")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/vip user"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestUnVIP(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.UnVIP("#channel", "user")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/unvip user"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestVIPs(t *testing.T) {
+	c := NewClient(NewClientConfig())
+	err := c.VIPs("#channel")
+	if err != nil {
+		t.Error(err)
+	}
+	want := "PRIVMSG #channel :/vips"
+	got := <-c.outbound
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}

@@ -35,8 +35,8 @@ type PingConfig struct {
 	timeout  time.Duration // how long to wait on a pong before reconnecting
 }
 
-// NewClientConfig returns a client config with Connection settings initialzed
-// to the recommended defaults. Identity is initialzed but left empty.
+// NewClientConfig returns a client config with Connection settings initialzed to the
+// recommended defaults. Identity is set to username and password if not empty strings.
 func NewClientConfig(username, password string) ClientConfig {
 	conn := ConnectionConfig{}
 	conn.Default()

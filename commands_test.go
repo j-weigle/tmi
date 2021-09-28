@@ -12,7 +12,7 @@ func TestAnonymousConnection(t *testing.T) {
 		t.Skip("skip:TestAnonymousConnection, reason:short mode")
 	}
 
-	config := NewClientConfig()
+	config := NewClientConfig("", "")
 	config.Identity.Anonymous()
 	client := NewClient(config)
 
@@ -48,7 +48,7 @@ func TestJoinThreeChannels(t *testing.T) {
 		channels = append(channels, ch)
 	}
 
-	config := NewClientConfig()
+	config := NewClientConfig("", "")
 	config.Identity.Anonymous()
 	c := NewClient(config)
 
@@ -91,7 +91,7 @@ func TestPartChannels(t *testing.T) {
 		channels = append(channels, ch)
 	}
 
-	config := NewClientConfig()
+	config := NewClientConfig("", "")
 	config.Identity.Anonymous()
 	c := NewClient(config)
 
@@ -168,7 +168,7 @@ func TestSay(t *testing.T) {
 		{testInput{"CHANNEL", "yeah okay"}, "PRIVMSG #channel :yeah okay"},
 	}
 
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	for _, test := range tests {
 		c.Say(test.in.channel, test.in.message)
 		got := <-c.outbound
@@ -184,7 +184,7 @@ func TestSayLong(t *testing.T) {
 		"PRIVMSG #long :" + strings.TrimSpace(test[500:1000]),
 		"PRIVMSG #long :" + strings.TrimSpace(test[1000:])}
 
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Say("#long", test)
 
 	for _, want := range wants {
@@ -198,7 +198,7 @@ func TestSayLong(t *testing.T) {
 func TestUpdatePassword(t *testing.T) {
 	want := "oauth:newpassword"
 	pw := "newpassword"
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.UpdatePassword(pw)
 	if c.config.Identity.password != want {
 		t.Errorf("got %v, want %v", c.config.Identity.password, want)
@@ -220,7 +220,7 @@ func TestAction(t *testing.T) {
 		},
 	}
 
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	for i := range tests {
 		var test = tests[i]
 		err := c.Action("#channel", test.in)
@@ -258,7 +258,7 @@ func TestBan(t *testing.T) {
 		},
 	}
 
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	for i := range tests {
 		var test = tests[i]
 		err := c.Ban("#channel", test.in.User, test.in.Reason)
@@ -277,7 +277,7 @@ func TestBan(t *testing.T) {
 }
 
 func TestUnban(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Unban("#channel", "user")
 	want := "PRIVMSG #channel :/unban user"
 	got := <-c.outbound
@@ -287,7 +287,7 @@ func TestUnban(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Clear("#channel")
 	want := "PRIVMSG #channel :/clear"
 	got := <-c.outbound
@@ -297,7 +297,7 @@ func TestClear(t *testing.T) {
 }
 
 func TestColor(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Color("#AABBCC")
 	want := "PRIVMSG # :/color #AABBCC"
 	got := <-c.outbound
@@ -314,7 +314,7 @@ func TestColor(t *testing.T) {
 }
 
 func TestCommercial(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Commercial("#channel", "30")
 	want := "PRIVMSG #channel :/commercial 30"
 	got := <-c.outbound
@@ -324,7 +324,7 @@ func TestCommercial(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Delete("#channel", "1234-5678")
 	want := "PRIVMSG #channel :/delete 1234-5678"
 	got := <-c.outbound
@@ -334,7 +334,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestEmoteOnly(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.EmoteOnly("#channel")
 	want := "PRIVMSG #channel :/emoteonly"
 	got := <-c.outbound
@@ -344,7 +344,7 @@ func TestEmoteOnly(t *testing.T) {
 }
 
 func TestEmoteOnlyOff(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.EmoteOnlyOff("#channel")
 	want := "PRIVMSG #channel :/emoteonlyoff"
 	got := <-c.outbound
@@ -354,7 +354,7 @@ func TestEmoteOnlyOff(t *testing.T) {
 }
 
 func TestFollowers(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Followers("#channel", "10m")
 	want := "PRIVMSG #channel :/followers 10m"
 	got := <-c.outbound
@@ -364,7 +364,7 @@ func TestFollowers(t *testing.T) {
 }
 
 func TestFollowersOff(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.FollowersOff("#channel")
 	want := "PRIVMSG #channel :/followersoff"
 	got := <-c.outbound
@@ -374,7 +374,7 @@ func TestFollowersOff(t *testing.T) {
 }
 
 func TestHost(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Host("#channel", "#target")
 	want := "PRIVMSG #channel :/host target"
 	got := <-c.outbound
@@ -384,7 +384,7 @@ func TestHost(t *testing.T) {
 }
 
 func TestUnhost(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Unhost("#channel")
 	want := "PRIVMSG #channel :/unhost"
 	got := <-c.outbound
@@ -394,7 +394,7 @@ func TestUnhost(t *testing.T) {
 }
 
 func TestMarker(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	err := c.Marker("#channel", "")
 	if err != nil {
 		t.Error(err)
@@ -416,7 +416,7 @@ func TestMarker(t *testing.T) {
 }
 
 func TestMod(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Mod("#channel", "user")
 	want := "PRIVMSG #channel :/mod user"
 	got := <-c.outbound
@@ -426,7 +426,7 @@ func TestMod(t *testing.T) {
 }
 
 func TestUnmod(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Unmod("#channel", "user")
 	want := "PRIVMSG #channel :/unmod user"
 	got := <-c.outbound
@@ -436,7 +436,7 @@ func TestUnmod(t *testing.T) {
 }
 
 func TestMods(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Mods("#channel")
 	want := "PRIVMSG #channel :/mods"
 	got := <-c.outbound
@@ -446,7 +446,7 @@ func TestMods(t *testing.T) {
 }
 
 func TestR9kBetaAndAliases(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.R9kBeta("#channel")
 	c.R9kMode("#channel")
 	c.Uniquechat("#channel")
@@ -466,7 +466,7 @@ func TestR9kBetaAndAliases(t *testing.T) {
 }
 
 func TestR9kBetaOffAndAliases(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.R9kBetaOff("#channel")
 	c.R9kModeOff("#channel")
 	c.UniquechatOff("#channel")
@@ -486,7 +486,7 @@ func TestR9kBetaOffAndAliases(t *testing.T) {
 }
 
 func TestRaid(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Raid("#channel", "target")
 	want := "PRIVMSG #channel :/raid target"
 	got := <-c.outbound
@@ -496,7 +496,7 @@ func TestRaid(t *testing.T) {
 }
 
 func TestUnraid(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Unraid("#channel")
 	want := "PRIVMSG #channel :/unraid"
 	got := <-c.outbound
@@ -506,7 +506,7 @@ func TestUnraid(t *testing.T) {
 }
 
 func TestSlow(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Slow("#channel", "3")
 	want := "PRIVMSG #channel :/slow 3"
 	got := <-c.outbound
@@ -516,7 +516,7 @@ func TestSlow(t *testing.T) {
 }
 
 func TestSlowOff(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.SlowOff("#channel")
 	want := "PRIVMSG #channel :/slowoff"
 	got := <-c.outbound
@@ -526,7 +526,7 @@ func TestSlowOff(t *testing.T) {
 }
 
 func TestSubscribers(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Subscribers("#channel")
 	want := "PRIVMSG #channel :/subscribers"
 	got := <-c.outbound
@@ -536,7 +536,7 @@ func TestSubscribers(t *testing.T) {
 }
 
 func TestSubscribersOff(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.SubscribersOff("#channel")
 	want := "PRIVMSG #channel :/subscribersoff"
 	got := <-c.outbound
@@ -546,7 +546,7 @@ func TestSubscribersOff(t *testing.T) {
 }
 
 func TestTimeout(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Timeout("#channel", "user", "")
 	want := "PRIVMSG #channel :/timeout user"
 	got := <-c.outbound
@@ -562,7 +562,7 @@ func TestTimeout(t *testing.T) {
 }
 
 func TestUntimeout(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.Untimeout("#channel", "user")
 	want := "PRIVMSG #channel :/untimeout user"
 	got := <-c.outbound
@@ -572,7 +572,7 @@ func TestUntimeout(t *testing.T) {
 }
 
 func TestVIP(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.VIP("#channel", "user")
 	want := "PRIVMSG #channel :/vip user"
 	got := <-c.outbound
@@ -582,7 +582,7 @@ func TestVIP(t *testing.T) {
 }
 
 func TestUnVIP(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.UnVIP("#channel", "user")
 	want := "PRIVMSG #channel :/unvip user"
 	got := <-c.outbound
@@ -592,7 +592,7 @@ func TestUnVIP(t *testing.T) {
 }
 
 func TestVIPs(t *testing.T) {
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	c.VIPs("#channel")
 	want := "PRIVMSG #channel :/vips"
 	got := <-c.outbound

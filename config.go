@@ -37,14 +37,21 @@ type PingConfig struct {
 
 // NewClientConfig returns a client config with Connection settings initialzed
 // to the recommended defaults. Identity is initialzed but left empty.
-func NewClientConfig() ClientConfig {
+func NewClientConfig(username, password string) ClientConfig {
 	conn := ConnectionConfig{}
 	conn.Default()
 	pinger := PingConfig{}
 	pinger.Default()
+	id := IdentityConfig{}
+	if username != "" {
+		id.SetUsername(username)
+	}
+	if password != "" {
+		id.SetPassword(password)
+	}
 	return ClientConfig{
 		Connection: conn,
-		Identity:   IdentityConfig{},
+		Identity:   id,
 		Pinger:     pinger,
 	}
 }

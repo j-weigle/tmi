@@ -12,7 +12,7 @@ func TestNewClientConfig(t *testing.T) {
 	pinger := PingConfig{true, time.Minute, time.Second * 5}
 
 	want := &ClientConfig{connection, id, pinger}
-	got := NewClientConfig()
+	got := NewClientConfig("", "")
 
 	if want.Connection != got.Connection {
 		t.Errorf("Connection: got %v, want %v", got.Connection, want.Connection)
@@ -26,7 +26,7 @@ func TestNewClientConfig(t *testing.T) {
 }
 
 func TestAnonymous(t *testing.T) {
-	config := NewClientConfig()
+	config := NewClientConfig("", "")
 	config.Identity.Anonymous()
 
 	jf := config.Identity.username[:9]
@@ -40,7 +40,7 @@ func TestAnonymous(t *testing.T) {
 }
 
 func TestSetReconnectSettings(t *testing.T) {
-	config := NewClientConfig()
+	config := NewClientConfig("", "")
 	config.Connection.SetReconnectSettings(20, time.Second*6)
 
 	if config.Connection.maxReconnectAttempts != 20 {
@@ -57,7 +57,7 @@ func TestSetReconnectSettings(t *testing.T) {
 }
 
 func TestSetPassword(t *testing.T) {
-	config := NewClientConfig()
+	config := NewClientConfig("", "")
 	config.Identity.SetPassword("p")
 	var want = "oauth:p"
 

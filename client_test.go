@@ -6,7 +6,7 @@ import (
 )
 
 func TestListenAndParse(t *testing.T) {
-	var c = NewClient(NewClientConfig())
+	var c = NewClient(NewClientConfig("", ""))
 
 	// Disconnect called
 	var ctx, cancelFunc = context.WithCancel(context.Background())

@@ -10,7 +10,7 @@ func TestLoginFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip:TestLoginFailure, reason:short mode")
 	}
-	config := NewClientConfig()
+	config := NewClientConfig("", "")
 	config.Identity.Set("a", "blah")
 
 	client := NewClient(config)
@@ -26,7 +26,7 @@ func TestPingPong(t *testing.T) {
 		t.Skip("skip:TestPingPong, reason:short mode")
 	}
 
-	config := NewClientConfig()
+	config := NewClientConfig("", "")
 	config.Identity.Anonymous()
 	config.Pinger.Disable()
 	c := NewClient(config)
@@ -96,7 +96,7 @@ func TestHandleIRCMessage(t *testing.T) {
 		{"366", nil},
 	}
 
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	for _, test := range tests {
 		got := c.handleIRCMessage(test.in)
 		if got != test.want {
@@ -142,7 +142,7 @@ func TestTmiHandlers(t *testing.T) {
 		{"RANDOMCOMMAND", errUnrecognizedIRCCommand},
 	}
 
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 	for _, test := range tests {
 		in, err := parseIRCMessage(test.inRaw)
 		if err != nil {
@@ -199,7 +199,7 @@ func TestAllHandlersCallOnMessageWhenSet(t *testing.T) {
 		{"RANDOMCOMMAND", nil},
 	}
 
-	c := NewClient(NewClientConfig())
+	c := NewClient(NewClientConfig("", ""))
 
 	c.OnUnsetMessage(func(m UnsetMessage) { results[m.Type] = true; unsetCounter++ })
 	c.OnConnected(func() { onConnectedCalled = true })

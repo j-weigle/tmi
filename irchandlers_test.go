@@ -43,19 +43,13 @@ func TestPingPong(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second)
-	err := c.send("PING :" + pingSignature)
-	if err != nil {
-		t.Error(err)
-	}
+	c.send("PING :" + pingSignature)
 	select {
 	case <-rcvdPong:
 	case <-time.After(time.Second * 5):
 		t.Errorf("expected pong after 5 seconds")
 	}
-	err = c.send("PING")
-	if err != nil {
-		t.Error(err)
-	}
+	c.send("PING")
 	select {
 	case <-rcvdPong:
 	case <-time.After(time.Second * 5):
@@ -165,6 +159,7 @@ func TestAllHandlersCallOnMessageWhenSet(t *testing.T) {
 	results := make(map[MessageType]bool)
 	types := []MessageType{UNSET, CLEARCHAT, CLEARMSG, GLOBALUSERSTATE, HOSTTARGET, NOTICE, RECONNECT, ROOMSTATE, USERNOTICE, USERSTATE, NAMES, JOIN, PART, PING, PONG, PRIVMSG, WHISPER}
 
+	var wantUnsetCounter = 12
 	var unsetCounter int
 	var onConnectedCalled bool
 
@@ -190,25 +185,18 @@ func TestAllHandlersCallOnMessageWhenSet(t *testing.T) {
 		{"PONG", nil},
 		{"PRIVMSG", nil},
 		{"WHISPER", nil},
-		{"002", errUnsetIRCCommand},
-		{"003", errUnsetIRCCommand},
-		{"004", errUnsetIRCCommand},
-		{"375", errUnsetIRCCommand},
-		{"372", errUnsetIRCCommand},
-		{"376", errUnsetIRCCommand},
-		{"CAP", errUnsetIRCCommand},
-		{"SERVERCHANGE", errUnsetIRCCommand},
-		{"421", errUnsetIRCCommand},
-		{"MODE", errUnsetIRCCommand},
-		{"366", errUnsetIRCCommand},
-		{"RANDOMCOMMAND", errUnrecognizedIRCCommand},
-	}
-
-	var wantUnsetCounter int
-	for _, test := range tests {
-		if test.want == errUnsetIRCCommand || test.want == errUnrecognizedIRCCommand {
-			wantUnsetCounter++
-		}
+		{"002", nil},
+		{"003", nil},
+		{"004", nil},
+		{"375", nil},
+		{"372", nil},
+		{"376", nil},
+		{"CAP", nil},
+		{"SERVERCHANGE", nil},
+		{"421", nil},
+		{"MODE", nil},
+		{"366", nil},
+		{"RANDOMCOMMAND", nil},
 	}
 
 	c := NewClient(NewClientConfig())
@@ -234,7 +222,7 @@ func TestAllHandlersCallOnMessageWhenSet(t *testing.T) {
 
 	for _, test := range tests {
 		err := c.handleIRCMessage(test.in)
-		if err != nil {
+		if err != test.want {
 			t.Error(err)
 		}
 	}

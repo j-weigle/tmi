@@ -2,7 +2,6 @@ package tmi
 
 import (
 	"context"
-	"errors"
 	"net/url"
 	"strings"
 	"sync"
@@ -142,11 +141,10 @@ func (c *Client) joinChannels(channels []string) {
 		if !c.connected.get() {
 			return
 		}
-		if c.send("JOIN "+ch) == nil {
-			c.channelsMutex.Lock()
-			c.channels[ch] = c.connected.get()
-			c.channelsMutex.Unlock()
-		}
+		c.send("JOIN " + ch)
+		c.channelsMutex.Lock()
+		c.channels[ch] = c.connected.get()
+		c.channelsMutex.Unlock()
 	}
 }
 
@@ -178,12 +176,13 @@ func (c *Client) listenAndParse(ctx context.Context, closeErrCb func(error)) {
 	}
 }
 
-func (c *Client) send(message string) error {
+func (c *Client) send(message string) {
 	select {
 	case c.outbound <- message:
-		return nil
 	default:
-		return errors.New("message not delivered to outbound channel")
+		go func() {
+			c.outbound <- message
+		}()
 	}
 }
 
@@ -227,10 +226,7 @@ func (c *Client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 				}
 
 			case <-intervalT.C:
-				err := c.send("PING :" + pingSignature)
-				if err != nil {
-					closeErrCb(errReconnect)
-				}
+				c.send("PING :" + pingSignature)
 
 				var timeoutT = time.NewTimer(c.config.Pinger.timeout)
 				select {

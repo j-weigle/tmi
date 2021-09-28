@@ -130,8 +130,8 @@ func (p *PingConfig) Enable() {
 	p.enabled = true
 }
 
-// Set sets the idle wait time and timeout for ping configuration.
-func (p *PingConfig) Set(interval, timeout time.Duration) {
+// SetTimes sets the idle wait time and timeout for ping configuration.
+func (p *PingConfig) SetTimes(interval, timeout time.Duration) {
 	p.interval = interval
 	p.timeout = timeout
 }

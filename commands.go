@@ -2,6 +2,7 @@ package tmi
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"net/url"
 	"strings"
@@ -46,26 +47,26 @@ func (c *Client) Connect() error {
 		if c.config.Connection.reconnect {
 			switch err {
 			case errReconnect:
-				const overflowPoint = 64 // technically 63, but using i - 1
+				var sleepDuration time.Duration
+				const overflowPoint = 34 // point at which sleepDuration would overflow
 
 				var i int = c.reconnectCounter
 				c.reconnectCounter++
-				// in case of overflow, reset to overflow point in order to maintain max interval
-				if c.reconnectCounter < 0 {
+				if c.reconnectCounter < 0 { // in case of overflow
 					c.reconnectCounter = overflowPoint
 				}
 
 				if maxReconnectAttempts >= 0 && i >= maxReconnectAttempts {
 					c.callDone(ErrMaxReconnectAttemptsReached)
-					return err
+					return ErrMaxReconnectAttemptsReached
 				}
 
-				var sleepDuration time.Duration
 				if i == 0 {
+					fmt.Printf("reconnecting...")
 					continue // immediate reconnect on first attempt
 				} else if i > 0 && i < overflowPoint {
 					// i - 1 because math.Pow(2, 0) == 1
-					sleepDuration = time.Duration(math.Pow(2, float64(i-1)))
+					sleepDuration = time.Duration(math.Pow(2, float64(i-1))) * time.Second
 				} else {
 					sleepDuration = maxReconnectInterval
 				}
@@ -74,6 +75,7 @@ func (c *Client) Connect() error {
 					sleepDuration = maxReconnectInterval
 				}
 
+				fmt.Printf("reconnecting in %v...\n", sleepDuration)
 				time.Sleep(sleepDuration)
 
 			default:

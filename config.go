@@ -7,11 +7,22 @@ import (
 	"time"
 )
 
+// see bottom of page at https://dev.twitch.tv/docs/irc/guide
+const (
+	// CapTags is for requesting the tags capability
+	CapTags = "twitch.tv/tags"
+	// CapCommands is for requesting the commands capability
+	CapCommands = "twitch.tv/commands"
+	// CapMembership is for requesting the membership capability
+	CapMembership = "twitch.tv/membership"
+)
+
 // ClientConfig holds how a client connects, reconnects, logs in as, and pinger behavior.
 type ClientConfig struct {
 	Connection      ConnectionConfig // how the client will connect and reconnect
 	Identity        IdentityConfig   // who the client logs in as
 	Pinger          PingConfig       // how often to ping, and timeout
+	Capabilities    []string         // which capabilites to request upon connection
 	ReadBufferSize  int              // channel buffer size for inbound messages
 	WriteBufferSize int              // channel buffer size for outbound messages
 }
@@ -55,6 +66,7 @@ func NewClientConfig(username, password string) ClientConfig {
 		Connection:      conn,
 		Identity:        id,
 		Pinger:          pinger,
+		Capabilities:    []string{CapTags, CapCommands, CapMembership},
 		ReadBufferSize:  512,
 		WriteBufferSize: 512,
 	}

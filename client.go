@@ -198,7 +198,7 @@ func (c *Client) sendConnectSequence() (err error) {
 	if err != nil {
 		return
 	}
-	message = "CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership"
+	message = "CAP REQ :" + strings.Join(c.config.Capabilities, " ")
 	err = c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
 	return
 }

@@ -11,7 +11,7 @@ func TestNewClientConfig(t *testing.T) {
 	id := IdentityConfig{}
 	pinger := PingConfig{true, time.Minute, time.Second * 5}
 
-	want := &ClientConfig{connection, id, pinger, 512, 512}
+	want := &ClientConfig{connection, id, pinger, []string{CapTags, CapCommands, CapMembership}, 512, 512}
 	got := NewClientConfig("", "")
 
 	if want.Connection != got.Connection {

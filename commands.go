@@ -29,14 +29,14 @@ func (c *Client) Connect() error {
 	var err error
 	var u url.URL
 
-	if c.config.Connection.secure {
+	if c.config.Connection.Secure {
 		u = url.URL{Scheme: "wss", Host: twitchWSSHost}
 	} else {
 		u = url.URL{Scheme: "ws", Host: twitchWSHost}
 	}
 
-	var maxReconnectAttempts int = c.config.Connection.maxReconnectAttempts
-	var maxReconnectInterval time.Duration = c.config.Connection.maxReconnectInterval
+	var maxReconnectAttempts int = c.config.Connection.MaxReconnectAttempts
+	var maxReconnectInterval time.Duration = c.config.Connection.MaxReconnectInterval
 
 	// Reset disconnect before starting connection loop. connect() will check if it has
 	// been used before attempting to (re)connect.
@@ -44,7 +44,7 @@ func (c *Client) Connect() error {
 
 	for {
 		err = c.connect(u)
-		if c.config.Connection.reconnect {
+		if c.config.Connection.Reconnect {
 			switch err {
 			case errReconnect:
 				var sleepDuration time.Duration
@@ -189,7 +189,7 @@ func (c *Client) Clear(channel string) {
 
 // Color changes the color of the username currently logged in.
 func (c *Client) Color(color string) {
-	c.Say("#"+c.config.Identity.username, "/color "+color)
+	c.Say("#"+c.config.Identity.Username, "/color "+color)
 }
 
 // Commercial starts a a commercial break in channel that is seconds long.

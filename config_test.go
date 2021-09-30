@@ -29,11 +29,11 @@ func TestAnonymous(t *testing.T) {
 	config := NewClientConfig("", "")
 	config.Identity.Anonymous()
 
-	jf := config.Identity.username[:9]
+	jf := config.Identity.Username[:9]
 	if jf != "justinfan" {
 		t.Errorf("SetToAnonymous should make username start with justinfan")
 	}
-	_, err := strconv.Atoi(config.Identity.username[10:])
+	_, err := strconv.Atoi(config.Identity.Username[10:])
 	if err != nil {
 		t.Errorf("SetToAnonymous should generate a random integer to end justinfan username")
 	}
@@ -43,16 +43,16 @@ func TestSetReconnectSettings(t *testing.T) {
 	config := NewClientConfig("", "")
 	config.Connection.SetReconnectSettings(20, time.Second*6)
 
-	if config.Connection.maxReconnectAttempts != 20 {
-		t.Errorf("maxReconnectAttempts: got %v, want %v", config.Connection.maxReconnectAttempts, 20)
+	if config.Connection.MaxReconnectAttempts != 20 {
+		t.Errorf("maxReconnectAttempts: got %v, want %v", config.Connection.MaxReconnectAttempts, 20)
 	}
-	if config.Connection.maxReconnectInterval != time.Second*6 {
-		t.Errorf("maxReconnectInterval: got %v, want %v", config.Connection.maxReconnectInterval, time.Second*6)
+	if config.Connection.MaxReconnectInterval != time.Second*6 {
+		t.Errorf("maxReconnectInterval: got %v, want %v", config.Connection.MaxReconnectInterval, time.Second*6)
 	}
 
 	config.Connection.SetReconnectSettings(20, time.Second*4)
-	if config.Connection.maxReconnectInterval != time.Second*5 {
-		t.Errorf("maxReconnectInterval: got %v, want %v", config.Connection.maxReconnectInterval, time.Second*5)
+	if config.Connection.MaxReconnectInterval != time.Second*5 {
+		t.Errorf("maxReconnectInterval: got %v, want %v", config.Connection.MaxReconnectInterval, time.Second*5)
 	}
 }
 
@@ -61,7 +61,7 @@ func TestSetPassword(t *testing.T) {
 	config.Identity.SetPassword("p")
 	var want = "oauth:p"
 
-	if config.Identity.password != want {
-		t.Errorf("SetPassword: got %v, want %v", config.Identity.password, want)
+	if config.Identity.Password != want {
+		t.Errorf("SetPassword: got %v, want %v", config.Identity.Password, want)
 	}
 }

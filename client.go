@@ -108,7 +108,7 @@ func (c *Client) connect(u url.URL) error {
 
 	// Start the pinger in a separate goroutine.
 	// It will ping c.conn after it hasn't received a message for c.config.Pinger.interval.
-	if c.config.Pinger.enabled {
+	if c.config.Pinger.Enabled {
 		c.spawnPinger(ctx, wg, closeErrCb)
 	}
 
@@ -188,12 +188,12 @@ func (c *Client) send(message string) {
 
 func (c *Client) sendConnectSequence() (err error) {
 	var message string
-	message = "PASS " + c.config.Identity.password
+	message = "PASS " + c.config.Identity.Password
 	err = c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
 	if err != nil {
 		return
 	}
-	message = "NICK " + c.config.Identity.username
+	message = "NICK " + c.config.Identity.Username
 	err = c.conn.WriteMessage(websocket.TextMessage, []byte(message+"\r\n"))
 	if err != nil {
 		return
@@ -212,7 +212,7 @@ func (c *Client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 		defer wg.Done()
 
 		for {
-			var intervalT = time.NewTimer(c.config.Pinger.interval)
+			var intervalT = time.NewTimer(c.config.Pinger.Interval)
 			select {
 			case <-ctx.Done():
 				if !intervalT.Stop() {
@@ -228,7 +228,7 @@ func (c *Client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 			case <-intervalT.C:
 				c.send("PING :" + pingSignature)
 
-				var timeoutT = time.NewTimer(c.config.Pinger.timeout)
+				var timeoutT = time.NewTimer(c.config.Pinger.Timeout)
 				select {
 				case <-c.rcvdPong:
 					if !timeoutT.Stop() {

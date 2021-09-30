@@ -200,8 +200,8 @@ func TestUpdatePassword(t *testing.T) {
 	pw := "newpassword"
 	c := NewClient(NewClientConfig("", ""))
 	c.UpdatePassword(pw)
-	if c.config.Identity.password != want {
-		t.Errorf("got %v, want %v", c.config.Identity.password, want)
+	if c.config.Identity.Password != want {
+		t.Errorf("got %v, want %v", c.config.Identity.Password, want)
 	}
 }
 
@@ -304,7 +304,7 @@ func TestColor(t *testing.T) {
 	if got != want {
 		t.Errorf("got %v, want %v", got, want)
 	}
-	c.config.Identity.username = "name"
+	c.config.Identity.Username = "name"
 	c.Color("#AABBCC")
 	want = "PRIVMSG #name :/color #AABBCC"
 	got = <-c.outbound

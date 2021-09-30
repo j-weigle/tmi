@@ -9,17 +9,19 @@ import (
 
 // ClientConfig holds how a client connects, reconnects, logs in as, and pinger behavior.
 type ClientConfig struct {
-	Connection ConnectionConfig // how the client will connect and reconnect.
-	Identity   IdentityConfig   // who the client logs in as.
-	Pinger     PingConfig       // how often to ping, and timeout.
+	Connection      ConnectionConfig // how the client will connect and reconnect
+	Identity        IdentityConfig   // who the client logs in as
+	Pinger          PingConfig       // how often to ping, and timeout
+	ReadBufferSize  int              // channel buffer size for inbound messages
+	WriteBufferSize int              // channel buffer size for outbound messages
 }
 
 // ConnectionConfig holds reconnect settings and (in)secure server connection.
 type ConnectionConfig struct {
-	Reconnect            bool          // if true, reconnect on reconnect requests and non-fatal errors.
-	Secure               bool          // if true, connect to to Twitch's secure server(port 443), otherwise insecure (port 80).
-	MaxReconnectAttempts int           // maximum number of attempts to reconnect when disconnected.
-	MaxReconnectInterval time.Duration // maximum interval between reconnect attempts.
+	Reconnect            bool          // if true, reconnect on reconnect requests and non-fatal errors
+	Secure               bool          // if true, connect to to Twitch's secure server(port 443), otherwise insecure (port 80)
+	MaxReconnectAttempts int           // maximum number of attempts to reconnect when disconnected
+	MaxReconnectInterval time.Duration // maximum interval between reconnect attempts
 }
 
 // IdentityConfig holds the username and password to log in with.
@@ -50,9 +52,11 @@ func NewClientConfig(username, password string) ClientConfig {
 		id.SetPassword(password)
 	}
 	return ClientConfig{
-		Connection: conn,
-		Identity:   id,
-		Pinger:     pinger,
+		Connection:      conn,
+		Identity:        id,
+		Pinger:          pinger,
+		ReadBufferSize:  512,
+		WriteBufferSize: 512,
 	}
 }
 

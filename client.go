@@ -56,8 +56,8 @@ func NewClient(c ClientConfig) *Client {
 	return &Client{
 		channels: make(map[string]bool),
 		config:   c,
-		inbound:  make(chan string, 512),
-		outbound: make(chan string, 512),
+		inbound:  make(chan string, c.ReadBufferSize),
+		outbound: make(chan string, c.WriteBufferSize),
 		rcvdMsg:  make(chan struct{}),
 	}
 }

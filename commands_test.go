@@ -68,7 +68,10 @@ func TestJoinThreeChannels(t *testing.T) {
 			if joined := tests[ch]; !joined {
 				t.Errorf("did not join %v", ch)
 			}
-			c.Part(ch)
+			err := c.Part(ch)
+			if err != nil {
+				t.Error(err)
+			}
 		}
 		c.Disconnect()
 	}()

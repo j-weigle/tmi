@@ -1198,11 +1198,11 @@ func TestParsePongMessage(t *testing.T) {
 			},
 		},
 		{
-			":tmi.twitch.tv PONG tmi.twitch.tv :" + pingSignature,
+			":tmi.twitch.tv PONG tmi.twitch.tv :" + PingSignature,
 			PongMessage{
 				IRCType: "PONG",
 				Type:    PONG,
-				Text:    pingSignature,
+				Text:    PingSignature,
 			},
 		},
 	}

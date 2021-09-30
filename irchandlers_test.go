@@ -43,7 +43,7 @@ func TestPingPong(t *testing.T) {
 		}
 	}()
 	time.Sleep(time.Second)
-	c.send("PING :" + pingSignature)
+	c.send("PING :" + PingSignature)
 	select {
 	case <-rcvdPong:
 	case <-time.After(time.Second * 5):

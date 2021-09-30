@@ -128,7 +128,7 @@ func (c *Client) handleIRCData(data IRCData) error {
 
 	case "PONG":
 		var pongMessage = parsePongMessage(data)
-		if pongMessage.Text == pingSignature {
+		if pongMessage.Text == PingSignature {
 			select {
 			case c.rcvdPong <- struct{}{}:
 			default:

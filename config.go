@@ -57,12 +57,11 @@ func NewClientConfig(username, password string) ClientConfig {
 }
 
 // Default sets the connection configuration options to their recommended defaults.
-//
 // Default options:
-// reconnect            = true,
-// secure               = true,
-// maxReconnectAttempts = -1 (infinite),
-// maxReconnectInterval = 30 seconds,
+// Reconnect            = true,
+// Secure               = true,
+// MaxReconnectAttempts = -1 (infinite),
+// MaxReconnectInterval = 30 seconds,
 func (c *ConnectionConfig) Default() {
 	c.Reconnect = true
 	c.Secure = true

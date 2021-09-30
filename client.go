@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const pingSignature = "go-tmi-ws"
+const PingSignature = "go-tmi-ws"
 
 // Client to configure callbacks and manage the connection.
 type Client struct {
@@ -226,7 +226,7 @@ func (c *Client) spawnPinger(ctx context.Context, wg *sync.WaitGroup, closeErrCb
 				}
 
 			case <-intervalT.C:
-				c.send("PING :" + pingSignature)
+				c.send("PING :" + PingSignature)
 
 				var timeoutT = time.NewTimer(c.config.Pinger.Timeout)
 				select {

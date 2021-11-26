@@ -28,7 +28,7 @@ func TestPingPong(t *testing.T) {
 
 	config := NewClientConfig("", "")
 	config.Identity.Anonymous()
-	config.Pinger.Disable()
+	config.Pinger.Enabled = false
 	c := NewClient(config)
 
 	rcvdPong := make(chan struct{})

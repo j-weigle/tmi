@@ -31,7 +31,7 @@ type ClientConfig struct {
 type ConnectionConfig struct {
 	Reconnect            bool          // if true, reconnect on reconnect requests and non-fatal errors
 	Secure               bool          // if true, connect to to Twitch's secure server(port 443), otherwise insecure (port 80)
-	MaxReconnectAttempts int           // maximum number of attempts to reconnect when disconnected
+	MaxReconnectAttempts int           // maximum number of attempts to reconnect when disconnected, -1 is infinite
 	MaxReconnectInterval time.Duration // maximum interval between reconnect attempts
 }
 
@@ -85,12 +85,6 @@ func (c *ConnectionConfig) Default() {
 	c.MaxReconnectInterval = time.Second * 30
 }
 
-// SetReconnect sets whether the client will attempt to reconnect
-// to the server in the case of a disconnect.
-func (c *ConnectionConfig) SetReconnect(reconnect bool) {
-	c.Reconnect = reconnect
-}
-
 // SetReconnectSettings sets how often and how many times the client
 // will attempt to reconnect to the server in the case of a disconnect.
 func (c *ConnectionConfig) SetReconnectSettings(maxAttempts int, maxInterval time.Duration) {
@@ -99,13 +93,6 @@ func (c *ConnectionConfig) SetReconnectSettings(maxAttempts int, maxInterval tim
 		maxInterval = time.Second * 5
 	}
 	c.MaxReconnectInterval = maxInterval
-}
-
-// SetSecure sets the connection scheme and port.
-// true uses scheme = wss and port = 443.
-// false uses scheme = ws and port = 80.
-func (c *ConnectionConfig) SetSecure(secure bool) {
-	c.Secure = secure
 }
 
 // Anonymous sets username to an random justinfan username (password can be anything).
@@ -140,16 +127,6 @@ func (p *PingConfig) Default() {
 	p.Enabled = true
 	p.Interval = time.Minute
 	p.Timeout = time.Second * 5
-}
-
-// Disable sending pings
-func (p *PingConfig) Disable() {
-	p.Enabled = false
-}
-
-// Enable sending pings
-func (p *PingConfig) Enable() {
-	p.Enabled = true
 }
 
 // SetTimes sets the idle wait time and timeout for ping configuration.

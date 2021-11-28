@@ -22,12 +22,19 @@
 	- [Rate Limiting](#rate-limiting)
 		- [Adding a Join Rate Limiter](#adding-a-join-rate-limiter)
 		- [Adding a Message Rate Limiter](#adding-a-message-rate-limiter)
-		- [Presets](#presets)
+		- [Rate Limit Presets](#rate-limit-presets)
 		- [Rate Limit Methods and Types](#rate-limit-methods-and-types)
 	- [Extra Parsing Functions/Methods](#extra-parsing-functionsmethods)
+	- [Benchmark Results](#benchmark-results)
+		- [Benchmark PrivateMessage Log](#benchmark-privatemessage-log)
+		- [Benchmark WhisperMessage](#benchmark-whispermessage)
+
+---
 
 ## Overview
 TMI is a framework for getting a Go Twitch IRC bot up and running in no time using a websocket connection. It handles all the parsing and connection management for you, so you can stay focused on what you want your bot to do and forget about writing an IRC tag parser.
+
+---
 
 ## Features
  - Simple, thread-safe API - run it blocking or non-blocking
@@ -36,6 +43,8 @@ TMI is a framework for getting a Go Twitch IRC bot up and running in no time usi
  - Server pinging during inactivity
  - Tested common Twitch commands - skip writing your own timeout, ban, etc. functions
  - Special message variable parsing functions for tmi-sent-ts, reply, and system-msg
+
+---
 
 ## Getting Started
 ```go
@@ -79,6 +88,8 @@ func main() {
     ...
 }
 ```
+
+---
 
 ## Messages
 
@@ -356,6 +367,8 @@ type User struct {
 }
 ```
 
+---
+
 ## Client
 
 ### Client Methods
@@ -430,6 +443,8 @@ func (c *Client) OnPrivateMessage(cb func(PrivateMessage))
 func (c *Client) OnWhisperMessage(cb func(WhisperMessage))
 ```
 
+---
+
 ## Configuration
 
 ### Configuration Options
@@ -486,6 +501,8 @@ func (p *PingConfig) Default()
 func (p *PingConfig) SetTimes(interval, timeout time.Duration)
 ```
 
+---
+
 ## Rate Limiting
 
 ### Adding a Join Rate Limiter
@@ -520,7 +537,7 @@ func main() {
 
 ```
 
-### Presets
+### Rate Limit Presets
 
 ```go
 // RLimJoinDefault is the regular account rate limit 20 attempts per 10s
@@ -555,6 +572,8 @@ type RateLimit struct {
 }
 ```
 
+---
+
 ## Extra Parsing Functions/Methods
 ```go
 // EscapeIRCTagValues escapes strings in certain messages' IRCTags `\s` -> " ", `\n` -> "\n", `\r` -> "\r", `\:` -> ";", `\\` -> "\\"
@@ -570,5 +589,26 @@ func ParseTimeStamp(unixTime string) time.Time
 // This is for when a PrivateMessage has its Reply field set to true
 func ParseReplyParentMessage(tags IRCTags) ReplyParentMsg
 ```
+
+---
+
+## Benchmark Results
+
+### Benchmark PrivateMessage Log
+*Log file contains 2000 unique PrivateMessage chat messages.*
+```
+cpu: Intel(R) Core(TM) i5-4690K CPU @ 3.50GHz
+93	  11422530 ns/op	 6981707 B/op	   58114 allocs/op
+```
+*With 93 iterations, that is 2000 * 93 = 186000 messages, and it finished the benchmark in 1.321s. It is, of course, not extremely accurate as a metric to consider how many messages per second due to how Go benchmarks, but is a vague indication of the overall performance.*
+
+### Benchmark WhisperMessage
+*Singular whisper message repeatedly processed.*
+```
+cpu: Intel(R) Core(TM) i5-4690K CPU @ 3.50GHz
+407077	      2823 ns/op	    1673 B/op	      18 allocs/op
+```
+*With 407077 iterations, that is 407077 "messages", and it finished the benchmark in 1.422s.*
+
 
 [gorilla websocket]: <https://github.com/gorilla/websocket>
